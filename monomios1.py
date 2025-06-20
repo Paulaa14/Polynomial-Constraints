@@ -24,3 +24,4 @@ f = open(args.filein)
 data = json.load(f)
 
 file = open(args.fileout, "w")
+
