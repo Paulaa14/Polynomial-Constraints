@@ -1,0 +1,16 @@
+{
+  "monomials": [
+    { "coef": 1, "factors": [ { "signal": 1, "degree": 8 }, { "signal": 3, "degree": 1 } ] },
+    { "coef": 1, "factors": [ { "signal": 1, "degree": 5 }, { "signal": 3, "degree": 1 } ] },
+    { "coef": 1, "factors": [ { "signal": 1, "degree": 4 }, { "signal": 2, "degree": 2 }, { "signal": 3, "degree": 1 } ] },
+    { "coef": 1, "factors": [ { "signal": 1, "degree": 4 }, { "signal": 3, "degree": 2 } ] },
+    { "coef": 1, "factors": [ { "signal": 1, "degree": 5 }, { "signal": 2, "degree": 2 }, { "signal": 3, "degree": 1 } ] },
+    { "coef": 1, "factors": [ { "signal": 1, "degree": 2 }, { "signal": 2, "degree": 2 }, { "signal": 3, "degree": 1 } ] },
+    { "coef": 1, "factors": [ { "signal": 1, "degree": 1 }, { "signal": 2, "degree": 4 }, { "signal": 3, "degree": 1 } ] },
+    { "coef": 1, "factors": [ { "signal": 1, "degree": 1 }, { "signal": 2, "degree": 2 }, { "signal": 3, "degree": 2 } ] },
+    { "coef": 1, "factors": [ { "signal": 1, "degree": 6 }, { "signal": 2, "degree": 1 }, { "signal": 3, "degree": 2 } ] },
+    { "coef": 1, "factors": [ { "signal": 1, "degree": 3 }, { "signal": 2, "degree": 1 }, { "signal": 3, "degree": 2 } ] },
+    { "coef": 1, "factors": [ { "signal": 1, "degree": 2 }, { "signal": 2, "degree": 3 }, { "signal": 3, "degree": 2 } ] },
+    { "coef": 1, "factors": [ { "signal": 1, "degree": 2 }, { "signal": 2, "degree": 1 }, { "signal": 3, "degree": 3 } ] }
+  ]
+}

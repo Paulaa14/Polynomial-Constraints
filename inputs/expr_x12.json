@@ -1,0 +1,14 @@
+{ "monomials":
+     [     
+      {
+           "coef": 1,
+           "factors": [
+     		{
+     		    "signal": 1,
+     		    "degree": 12
+        	}
+             ]
+      }  
+    ]
+}
+
