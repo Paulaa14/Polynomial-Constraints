@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-
-# Primero como un problema SAT, puedo resolverlo con 2 variables intermedias? 3? Teniendo como grado máximo permitido 2 por ejemplo.
-# Aparecen muchas simetrías de soluciones que solamente se diferencian en el renombrado de las variables. Se pueden controlar numerando u ordenando.
-
-from collections import Counter, defaultdict
+from collections import defaultdict
 import itertools
+import json
+from z3 import *
+import argparse
 
 def addsum(a):
     if len(a) == 0:
@@ -49,13 +48,15 @@ def count_combinations(monomios, maxDeg):
     return mapa
 
 # Una lista está contenida dentro de otra
-def contiene_variables(variables, target):
-    return not (Counter(target) - Counter(variables))
+def contains(variables, target):
+    vars_copy = list(variables)  # Copia para no modificar la original
+    for t in target:
+        if t in vars_copy:
+            vars_copy.remove(t)  # Quitamos uno a uno cada coincidencia
+        else:
+            return False
+    return True
 
-import json
-from z3 import *
-
-import argparse
 parser = argparse.ArgumentParser()
 
 parser.add_argument("filein", help=".json file including the tree structure",
@@ -105,18 +106,17 @@ print(combinaciones)
 
 combinaciones_lista = list(combinaciones.keys()) # Claves del mapa, posibles variables intermedias
 
-VI = {}
+VI = {} # Igual sirve para las combinaciones de variables originales para crear variables nuevas
 for k in range(len(combinaciones_lista)):
     clave = f"e{k}"
     VI[clave] = combinaciones_lista[k]
 
+
+
 solver = Optimize()
 
-# Variables Z3
 grados_monomios = [] # Para cada monomio, qué grado tiene. Ya sea originalmente o tras hacer alguna sustitución.
-keeps = [] # Como máximo puede haber num_intermedias VI, pero puede haber menos. Obligo a que estén las primeras en el array
-# Otra opción es tener un array del mismo tamaño que el array de las combinaciones de las variables con los booleanos 
-# para cada una y el número de keeps debe ser <= num_intermedias
+keeps = [] # Array de tamaño el número de combinaciones de las variables con un booleano para cada una de ellas
 
 for i in range(num_monomios):
     grados_monomios.append(Int("degm_" + str(i)))
@@ -144,8 +144,8 @@ for p in range(num_polinomios):
         f = expand_factors(monomios[i]["factors"])
 
         for j in range(len(combinaciones_lista)):
-            if contiene_variables(f, list(combinaciones_lista[j])):
-                deg.append(If(keeps[j], len(combinaciones_lista[j]) - 1, 0))
+            if contains(f, list(combinaciones_lista[j])):
+                deg.append(If(keeps[j], len(combinaciones_lista[j]) - 1, 0)) # Sólo si la contiene y el keep está a true entonces el grado se modifica
         solver.add(grados_monomios[i] == degrees[i] - addsum(deg))
 
 
@@ -159,6 +159,5 @@ if solver.check() == sat:
             print(f"Variable intermedia seleccionada: {nombre_variable}")
 
 else: print("unsat")
-
 
 # print(solver.assertions())

@@ -1,17 +1,13 @@
-{ "monomials":
-     [     
-      {
-           "coef": 1,
-           "factors": [
-     		{
-     		    "signal": 1,
-     		    "degree": 4
-        	},
-        	{
-     		    "signal": 2,
-     		    "degree": 4
-        	}
-             ]
-      }  
-    ]
+{ 
+"num": 2,
+"polinomials":
+[
+	{
+		"monomials":[{"coef": 1,"factors": [{ "signal": 1,"degree": 4},{"signal": 2,"degree": 4}]}]
+    }, 
+	{
+		"monomials":[{"coef": 1,"factors": [{ "signal": 1,"degree": 4},{"signal": 2,"degree": 4}]}]
+	}
+],
+	"degree": 2
 }
