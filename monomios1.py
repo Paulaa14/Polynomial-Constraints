@@ -144,5 +144,6 @@ if solver.check() == sat:
 
 else: print("unsat")
 
+
 # print(solver.assertions())
 # print(solver.model())
