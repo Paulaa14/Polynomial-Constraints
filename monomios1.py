@@ -15,6 +15,15 @@ def addsum(a):
     else :
         x = a.pop()
         return x + addsum(a) 
+    
+def addexists(a):
+    if len(a) == 0:
+        return False
+    elif len(a) == 1:
+        return a[0]
+    else :
+        x = a.pop()
+        return Or(x,addexists(a)) 
 
 def expand_factors(factors): # [x_1, x_1, x_2]
     expanded = []
@@ -36,16 +45,13 @@ def generate_combinations(factors, maxDeg):
     return combinaciones
 
 def count_combinations(monomios, maxDeg):
-    mapa = defaultdict(int) # Cada subexpresión en cuántos monomios aparece
+    combinaciones = set()
 
     for monomio in monomios:
-        
         combs = generate_combinations(monomio["factors"], maxDeg)
-
         for c in combs:
-            mapa[c] += 1 # Sumas 1 en las subexpresiones que están en el monomio
-
-    return mapa
+            combinaciones.add(tuple(sorted(c)))
+    return combinaciones
 
 # Una lista está contenida dentro de otra
 def contains(variables, target):
@@ -57,12 +63,12 @@ def contains(variables, target):
             return False
     return True
 
+
 parser = argparse.ArgumentParser()
 
 parser.add_argument("filein", help=".json file including the tree structure",
                     type=str)
 parser.add_argument("fileout", help= "Output file with the new expressions")
-
 
 args=parser.parse_args()
 
@@ -73,14 +79,15 @@ file = open(args.fileout, "w")
 
 polinomios = data["polinomials"]
 num_polinomios = data["num"]
-maxDeg = data["degree"] #2 # Luego leerlo del fichero
-num_intermedias = 3 # Número máximo de variables intermedias que se permiten
+maxDeg = data["degree"] # Luego leerlo del fichero
+# num_intermedias = 3 # Número máximo de variables intermedias que se permiten
 
 degrees = [] # Cada monomio qué grado tiene
 num_monomios = 0
-combinaciones = defaultdict(int)
+combinaciones = set()
+mayor_grado_polinomio = 0
 
-count = 0
+count = 0 # Para cuando hay más de un polinomio
 for p in range(num_polinomios):
     monomios = polinomios[p]["monomials"]
     num_monomios += len(monomios)
@@ -93,24 +100,24 @@ for p in range(num_polinomios):
         for f in monomios[i]["factors"]: # Al ser un producto se suma
             degrees[count] = degrees[count] + f["degree"]
 
+        mayor_grado_polinomio = max(mayor_grado_polinomio, degrees[count])
         count = count + 1
 
     # Todas las posibles subexpresiones que aparecen en los monomios y el número de veces que aparece cada una
     cb = count_combinations(monomios, maxDeg)
 
     for c in cb:
-        combinaciones[c] += cb[c]
+        combinaciones.add(c)
 
 
 print(combinaciones)
 
-combinaciones_lista = list(combinaciones.keys()) # Claves del mapa, posibles variables intermedias
+# combinaciones_lista = list(combinaciones.keys()) # Claves del mapa, posibles variables intermedias
 
-VI = {} # Igual sirve para las combinaciones de variables originales para crear variables nuevas
-for k in range(len(combinaciones_lista)):
-    clave = f"e{k}"
-    VI[clave] = combinaciones_lista[k]
-
+# VI = {} # Igual sirve para las combinaciones de variables originales para crear variables nuevas
+# for k in range(len(combinaciones_lista)):
+#     clave = f"e{k}"
+#     VI[clave] = combinaciones_lista[k]
 
 
 solver = Optimize()
@@ -130,7 +137,7 @@ for i in range(len(combinaciones)):
     keeps.append(Bool("keep_" + str(i)))
 
     solver.add_soft(Not(keeps[i]), 1, id = "keeps") # Minimiza el número de variables intermedias
-    solver.add_soft(keeps[i], combinaciones[combinaciones_lista[i]], id = "apariciones") # Hace que se prioricen las VI que aparecen más veces
+    # solver.add_soft(keeps[i], combinaciones[combinaciones[i]], id = "apariciones") # Hace que se prioricen las VI que aparecen más veces
 
     # k.append(If(keeps[i], 1, 0))
 
@@ -143,10 +150,65 @@ for p in range(num_polinomios):
         deg = []
         f = expand_factors(monomios[i]["factors"])
 
-        for j in range(len(combinaciones_lista)):
-            if contains(f, list(combinaciones_lista[j])):
-                deg.append(If(keeps[j], len(combinaciones_lista[j]) - 1, 0)) # Sólo si la contiene y el keep está a true entonces el grado se modifica
+        # Sólo si la contiene y el keep está a true entonces el grado se modifica
+        for j, combo in enumerate(list(combinaciones)):
+            if contains(f, list(combo)):
+                deg.append(If(keeps[j], len(list(combo)) - 1, 0))
         solver.add(grados_monomios[i] == degrees[i] - addsum(deg))
+
+
+# Con los factores de nivel 0 puedes escoger cualquiera, las variables intermedias solo puedes utilizar las que estén activas
+# Booleanos para ver qué monomios ya tienen grado <= maxDeg. Cuando todos estén a cierto se para de buscar variables y de subir niveles
+
+# Matriz, para cada nivel, qué variables tienes
+
+no_cumple_grado = []
+
+for m in range(num_monomios):
+    no_cumple_grado.append(Bool("cumple_" + str(i)))
+
+    # solver.add(no_cumple_grado[m] == grados_monomios[m] > maxDeg) # Vale true si el grado del monomio es mayor que el grado máximo permitido
+
+# niveles = []
+# niveles.append(list(combinaciones)) # El nivel 0 contiene todos los factores del vector combinaciones
+
+expresiones = [] # Indexando obtienes la expresión i-ésima para luego reconstruir recursivamente
+activas = []
+
+num_expresiones_por_nivel = [] # Acumulado
+num_expresiones_por_nivel.append(len(combinaciones))
+
+# Como máximo vas a tener que meter tantas variables como el mayor grado dentro del polinomio. SE PUEDE ACOTAR MUCHO MÁS
+# Primero se construyen todas las posibilidades. Otra opción es hacerlo dinámicamente
+for i in range(mayor_grado_polinomio/2): # AJUSTAR
+    expr = num_expresiones_por_nivel[i]
+    # nivel_i = []
+
+    for r in range(2, maxDeg + 1):
+        for combo in itertools.combinations(range(num_expresiones_por_nivel[i]), r): # Así combina e1*e1... en vez de x1*x1
+            expr += 1 # Una nueva expresión en este nivel
+            # nivel_i.append(combo)
+            expresiones.append(combo)
+    
+    num_expresiones_por_nivel.append(expr)
+
+for i in range(len(expresiones)):
+    activas.append(Bool("act_" + str(i)))
+
+    if i > len(combinaciones): # No es una expresión del nivel 0
+        for e in expresiones[i]:
+            solver.add(Implies(activas[i]), activas[e]) # E5 = E1*E1. Solo se puede usar E5 si se usa también E1. Recursivamente se va haciendo
+
+    
+    solver.add_soft(Not(activas[i]), 1, id = "activas") # Minimiza el número de variables intermedias
+
+
+# Creamos la condición: al menos un monomio no cumple el grado
+# hay_alguno_no_cumple = addexists(no_cumple_grado)
+
+# while solver.check(hay_alguno_no_cumple) == sat: # Queda algún monomio de grado mayor que maxDeg
+#     for nivel in range(niveles, -1, -1): # Bucle al revés
+
 
 
 if solver.check() == sat:
@@ -154,7 +216,7 @@ if solver.check() == sat:
 
     for i in range(len(keeps)):
         if is_true(m.eval(keeps[i])):
-            combo = combinaciones_lista[i]
+            combo = list(combinaciones)[i]
             nombre_variable = "*".join(combo) # Convierte la tupla ('x_1', 'x_2') a "x_1*x_2"
             print(f"Variable intermedia seleccionada: {nombre_variable}")
 

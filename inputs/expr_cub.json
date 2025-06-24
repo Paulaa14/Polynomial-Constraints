@@ -1,17 +1,12 @@
-{ "num": 2,
-  "polinomials":
-  [
+{
+    "num": 1,
+    "polinomials":
+    [
     {"monomials":
      [     
       {"coef": 1, "factors": [{"signal": 1, "degree": 3}]},
       {"coef": -3, "factors": [{"signal": 1, "degree": 2}, {"signal": 2, "degree": 1}]},
       {"coef": 3, "factors": [{"signal": 2, "degree": 2}, {"signal": 1, "degree": 1}]},
-      {"coef": -1, "factors": [{"signal": 2, "degree": 3}]}
-    ]},
-    {"monomials":
-      [{"coef": 1, "factors": [{"signal": 4, "degree": 3}]},
-      {"coef": -3, "factors": [{"signal": 4, "degree": 2}, {"signal": 2, "degree": 1}]},
-      {"coef": 3, "factors": [{"signal": 2, "degree": 2}, {"signal": 4, "degree": 1}]},
       {"coef": -1, "factors": [{"signal": 2, "degree": 3}]}
     ]}],
     "degree": 2
