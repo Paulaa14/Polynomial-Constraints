@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from collections import defaultdict
 import itertools
 import json
 from z3 import *
 import argparse
+import math
 
 def addsum(a):
     if len(a) == 0:
@@ -40,25 +40,24 @@ def generate_combinations(factors, maxDeg):
     for r in range(1, min(maxDeg, len(expanded)) + 1): # Para que solo saque expresiones como mucho de maxDeg, el resto no me sirven como variables intermedias
         # combinations(p, r) -> tuplas de longitud r ordenadas y no repetidas de los elementos en p
         for combo in itertools.combinations(expanded, r):
-            combinaciones.add(combo)
+            if len(combo) > 1: combinaciones.add(combo) # Añadir x1 como VI no tiene sentido
 
-    return combinaciones
+    return (combinaciones, expanded)
 
-def count_combinations(monomios, maxDeg):
-    combinaciones = set()
-
-    for monomio in monomios:
-        combs = generate_combinations(monomio["factors"], maxDeg)
-        for c in combs:
-            if len(c) > 1: combinaciones.add(tuple(sorted(c)))
-    return combinaciones
+# def count_combinations(monomios, maxDeg, factores): # Cada combinación cuántas veces aparece
+#     combinaciones = set()
+#     for monomio in monomios:
+#         combs = generate_combinations(monomio["factors"], maxDeg, factores)
+#         for c in combs:
+#             if len(c) > 1: combinaciones.add(tuple(sorted(c)))
+#     return combinaciones
 
 # Una lista está contenida dentro de otra
 def contains(variables, target):
     vars_copy = list(variables)  # Copia para no modificar la original
     for t in target:
         if t in vars_copy:
-            vars_copy.remove(t)  # Quitamos uno a uno cada coincidencia
+            vars_copy.remove(t) 
         else:
             return False
     return True
@@ -80,7 +79,6 @@ file = open(args.fileout, "w")
 polinomios = data["polinomials"]
 num_polinomios = data["num"]
 maxDeg = data["degree"] # Luego leerlo del fichero
-# num_intermedias = 3 # Número máximo de variables intermedias que se permiten
 
 degrees = [] # Cada monomio qué grado tiene
 num_monomios = 0
@@ -88,6 +86,7 @@ combinaciones = set()
 mayor_grado_polinomio = 0
 
 count = 0 # Para cuando hay más de un polinomio
+factores = []
 for p in range(num_polinomios):
     monomios = polinomios[p]["monomials"]
     num_monomios += len(monomios)
@@ -103,14 +102,15 @@ for p in range(num_polinomios):
         mayor_grado_polinomio = max(mayor_grado_polinomio, degrees[count])
         count = count + 1
 
-    # Todas las posibles subexpresiones que aparecen en los monomios y el número de veces que aparece cada una
-    cb = count_combinations(monomios, maxDeg)
+        fact = []
+        (cb, fact) = generate_combinations(monomios[i]["factors"], maxDeg)
+        factores.append(fact)
 
-    for c in cb:
-        combinaciones.add(c)
-
+        for c in cb:
+            combinaciones.add(c)
 
 print(combinaciones)
+
 if mayor_grado_polinomio <= maxDeg:
     sys.exit("No es necesario añadir ninguna variable auxiliar.")
 
@@ -133,15 +133,18 @@ activas = []
 num_expresiones = len(combinaciones)
 lista_combinaciones = list(combinaciones)
 
-for i in range(num_expresiones):
-    expresiones.add((i, )) # Añadir x1 como VI no tiene sentido
+for i in range(len(combinaciones)):
+    expresiones.add((i, ))
 
 # Como máximo vas a tener que meter tantas variables como el mayor grado dentro del polinomio. SE PUEDE ACOTAR MÁS
 # Primero se construyen todas las posibilidades. Otra opción es hacerlo dinámicamente
-for i in range(int(mayor_grado_polinomio.bit_length())): # AJUSTAR. Coge log2(maxGrado)
+
+max_niveles = math.ceil(math.log(mayor_grado_polinomio, maxDeg)) # log maxDeg (mayorGrado)
+
+for i in range(mayor_grado_polinomio): # AJUSTAR.
     for r in range(2, maxDeg + 1):
         # Coge todas las anteriores
-        for combo in itertools.product(range(num_expresiones), repeat = r): # Así combina e1*e1... en vez de x1*x1
+        for combo in itertools.combinations_with_replacement(range(num_expresiones), r): # Así combina e1*e1... en vez de x1*x1
             expresiones.add(tuple(sorted(combo)))
 
     num_expresiones = len(expresiones)
@@ -149,16 +152,18 @@ for i in range(int(mayor_grado_polinomio.bit_length())): # AJUSTAR. Coge log2(ma
 expresiones = sorted(expresiones, key=lambda x: (x[0], x[1] if len(x) > 1 else -1))
 lista_expresiones = list(expresiones) # Lista de tuplas
 
-for i in range(len(lista_expresiones)):
+for i in range(num_expresiones):
     activas.append(Bool("act_" + str(i)))
 
     solver.add_soft(Not(activas[i]), 1, id = "activas") # Minimiza el número de variables intermedias
 
-# E5 = E1*E1. Solo se puede usar E5 si se usa también E1. Recursivamente se va haciendo
-for i in range(len(lista_expresiones)):
+    # E5 = E1*E1. Solo se puede usar E5 si se usa también E1. Recursivamente se va expandiendo
     if i >= len(combinaciones): # No es una expresión del nivel 0
         for exp in lista_expresiones[i]:
-            solver.add(Implies(activas[i], activas[exp]))
+            solver.add(Or(Not(activas[i]), activas[exp]))         # Implies(activas[i], activas[exp]))
+
+
+# print(lista_expresiones)
 
 def reconstruir_expresiones(id, reconstrucciones):
     if id < len(reconstrucciones): # Ya está calculado
@@ -172,34 +177,41 @@ def reconstruir_expresiones(id, reconstrucciones):
 
 # Reconstruir variables intermedias creadas
 reconstrucciones = []
-for i in range(len(lista_expresiones)):
-    if i < len(combinaciones): reconstrucciones.append(list(lista_combinaciones[i]))
+# ya_vistas = set()
+
+# Tienen que estar todas las combinaciones porque aunque generen la misma expresión luego se quedará con la que use menos variables
+for i in range(num_expresiones):
+    if i < len(combinaciones):
+        expr = list(lista_combinaciones[i])
     else: 
         expr = reconstruir_expresiones(i, reconstrucciones)
-        reconstrucciones.append(expr) # Poco eficiente porque igual reconstruyes cosas que no son necesarias
 
-grados = []
-for p in range(num_polinomios):
-    monomios = polinomios[p]["monomials"]
-    for i in range(len(monomios)):
-        deg = []
-        f = expand_factors(monomios[i]["factors"])
+    # expr_key = tuple(sorted(expr)) 
 
-        # Sólo si la contiene y el keep está a true entonces el grado se modifica. 
-        # Recorro al revés para sustituir primero las expresiones más grandes
-        for e in range(len(reconstrucciones) - 1, -1, -1):
-            if contains(f, reconstrucciones[e]):
-                deg.append(If(activas[e], len(reconstrucciones[e]) - 1, 0))
+    # # Para evitar repetidos
+    # if expr_key not in ya_vistas:
+    #     ya_vistas.add(expr_key)
+    reconstrucciones.append(expr)
 
-                # Elimino los elementos de f porque ya han sido sustituidos
-                for item in reconstrucciones[e]:
-                    f.remove(item)
-
-        grados.append(deg)
-        
+# grados = []
+# for p in range(num_polinomios):
+    # monomios = polinomios[p]["monomials"]
 for i in range(num_monomios):
-    solver.add(grados_monomios[i] == degrees[i] - addsum(grados[i]))
+    deg = []
 
+    f = factores[i]
+    # Solo si la contiene y el keep está a true entonces el grado se modifica. 
+    # Puedo llevarlo separado por monomio para no tener que mirar si está contenido todo el rato????
+    for e in range(num_expresiones - 1, -1, -1):
+        if contains(f, reconstrucciones[e]):
+            deg.append(If(activas[e], len(reconstrucciones[e]) - 1, 0))
+
+            # Elimino los elementos de f porque ya han sido sustituidos
+            # for item in reconstrucciones[e]:
+            #     f.remove(item)
+
+    # grados.append(deg)
+    solver.add(grados_monomios[i] == degrees[i] - addsum(deg))
 
 if solver.check() == sat:
     m = solver.model()
