@@ -5,7 +5,6 @@ import itertools
 import json
 from z3 import *
 import argparse
-import math
 
 def addsum(a):
     if len(a) == 0:
@@ -40,7 +39,7 @@ def generate_combinations(factors, maxDeg):
     for r in range(1, min(maxDeg, len(expanded)) + 1): # Para que solo saque expresiones como mucho de maxDeg, el resto no me sirven como variables intermedias
         # combinations(p, r) -> tuplas de longitud r ordenadas y no repetidas de los elementos en p
         for combo in itertools.combinations(expanded, r):
-            if len(combo) > 1: combinaciones.add(combo) # Añadir x1 como VI no tiene sentido
+            combinaciones.add(combo)
 
     return (combinaciones, expanded)
 
@@ -78,7 +77,7 @@ file = open(args.fileout, "w")
 
 polinomios = data["polinomials"]
 num_polinomios = data["num"]
-maxDeg = data["degree"] # Luego leerlo del fichero
+maxDeg = data["degree"]
 
 degrees = [] # Cada monomio qué grado tiene
 num_monomios = 0
@@ -139,9 +138,7 @@ for i in range(len(combinaciones)):
 # Como máximo vas a tener que meter tantas variables como el mayor grado dentro del polinomio. SE PUEDE ACOTAR MÁS
 # Primero se construyen todas las posibilidades. Otra opción es hacerlo dinámicamente
 
-max_niveles = math.ceil(math.log(mayor_grado_polinomio, maxDeg)) # log maxDeg (mayorGrado)
-
-for i in range(mayor_grado_polinomio): # AJUSTAR.
+for i in range(mayor_grado_polinomio): # NUMERO AL AZAR EN PRINCIPIO - HEURÍSITICA LUEGO
     for r in range(2, maxDeg + 1):
         # Coge todas las anteriores
         for combo in itertools.combinations_with_replacement(range(num_expresiones), r): # Así combina e1*e1... en vez de x1*x1
@@ -155,7 +152,7 @@ lista_expresiones = list(expresiones) # Lista de tuplas
 for i in range(num_expresiones):
     activas.append(Bool("act_" + str(i)))
 
-    solver.add_soft(Not(activas[i]), 1, id = "activas") # Minimiza el número de variables intermedias
+    # solver.add_soft(Not(activas[i]), 1, id = "activas") # Minimiza el número de variables intermedias
 
     # E5 = E1*E1. Solo se puede usar E5 si se usa también E1. Recursivamente se va expandiendo
     if i >= len(combinaciones): # No es una expresión del nivel 0
