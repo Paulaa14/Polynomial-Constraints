@@ -32,11 +32,10 @@ def expand_factors(factors): # [x_1, x_1, x_2]
         expanded.extend([var] * f["degree"])
     return expanded
 
-def generate_combinations(factors, maxDeg):
-    expanded = expand_factors(factors)
+def generate_combinations(expanded, maxDeg):
     combinaciones = set() # Conjunto para que no se repitan los elementos
 
-    for r in range(1, min(maxDeg, len(expanded)) + 1): # Para que solo saque expresiones como mucho de maxDeg, el resto no me sirven como variables intermedias
+    for r in range(2, min(maxDeg, len(expanded)) + 1): # Para que solo saque expresiones como mucho de maxDeg, el resto no me sirven como variables intermedias
         # combinations(p, r) -> tuplas de longitud r ordenadas y no repetidas de los elementos en p
         for combo in itertools.combinations(expanded, r):
             combinaciones.add(combo)
@@ -60,7 +59,6 @@ def contains(variables, target):
         else:
             return False
     return True
-
 
 parser = argparse.ArgumentParser()
 
@@ -91,7 +89,6 @@ count = 0 # Para cuando hay más de un polinomio
 factores = []
 for p in range(num_polinomios):
     monomios = polinomios[p]["monomials"]
-    lista_monomios.append(monomios)
     num_monomios += len(monomios)
 
     for i in range(len(monomios)):
@@ -107,19 +104,22 @@ for p in range(num_polinomios):
         count = count + 1
 
         fact = []
-        (cb, fact) = generate_combinations(monomios[i]["factors"], maxDeg)
+        expanded = expand_factors(monomios[i]["factors"])
+        lista_monomios.append(expanded)
+
+        (cb, fact) = generate_combinations(expanded, maxDeg)
         factores.append(fact)
 
         for c in cb:
             combinaciones.add(c)
 
 num_variables_por_monomio = []
-for m in range(num_monomios): # Para cada monomio, cuántas variables de cada una contiene
+for m in range(num_monomios): # Para cada monomio, de cada variable, cuántas contiene OK
     num = []
-    for var in range(len(cjto_variables)):
+    for var in cjto_variables:
         cont = 0
-        for elem in monomios[m]:
-            if elem == var:
+        for elem in lista_monomios[m]:
+            if elem == ("x_" + str(var)):
                 cont += 1
         num.append(cont)
 
@@ -132,13 +132,13 @@ if mayor_grado_polinomio <= maxDeg:
 
 solver = Optimize()
 
-grados_monomios = [] # Para cada monomio, qué grado tiene. Ya sea originalmente o tras hacer alguna sustitución.
+# grados_monomios = [] # Para cada monomio, qué grado tiene. Ya sea originalmente o tras hacer alguna sustitución.
 
-for i in range(num_monomios):
-    grados_monomios.append(Int("degm_" + str(i)))
+# for i in range(num_monomios):
+#     grados_monomios.append(Int("degm_" + str(i)))
 
-    solver.add(grados_monomios[i] >= 0)
-    solver.add(grados_monomios[i] <= maxDeg)
+#     solver.add(grados_monomios[i] >= 0)
+#     solver.add(grados_monomios[i] <= maxDeg)
 
 # Con los factores de nivel 0 puedes escoger cualquiera, las variables intermedias solo puedes utilizar las que estén activas
 # Booleanos para ver qué monomios ya tienen grado <= maxDeg. Cuando todos estén a cierto se para de buscar variables y de subir niveles
@@ -182,7 +182,8 @@ for i in range(num_expresiones):
         cuantas = []
         for var in range(len(cjto_variables)):
             c = []
-            cuantas.append(Int("cuantas_" + str(i) + "_" + str(var))) # La variable i cuántas var contiene
+            cuantas.append(Int("cuantas_" + str(i) + "_" + str(var))) # La variable i cuántas variables var contiene
+            # Para cada expresión de las que depende, cuántas apariciones de var tienen
             for exp in lista_expresiones[i]:
                 c.append(cuantas_originales[exp][var])
                 
@@ -194,38 +195,61 @@ for i in range(num_expresiones):
         cuantas = []
         for var in range(len(cjto_variables)):
             cuantas.append(Int("cuantas_" + str(i) + "_" + str(var))) # La variable i cuántas j contiene
-            c = []
+            count = 0
             for elem in lista_combinaciones[i]:
-                if list(cjto_variables)[var] == elem:
-                    c.append(1)
-            solver.add(Implies(activas[i], cuantas[var] == addsum(c)))
+                if ("x_" + str(list(cjto_variables)[var])) == elem: count += 1
+
+            solver.add(Implies(activas[i], cuantas[var] == count))
         
         cuantas_originales.append(cuantas)
 
-    # A la hora de reconstruir hay que quedarse con la expresión más general, que es la que contiene las demás y lleva la cuenta en total de todo
-
 solver.add(addsum(cuenta_activas) <= max_intermedias)
+
+grados_expresiones = []
+for i in range(num_expresiones):
+    grados_expresiones.append(Int("dege_" + str(i)))
+
+    solver.add(grados_expresiones[i] <= maxDeg)
+
+    grados = []
+    if i < len(combinaciones):
+        solver.add(grados_expresiones[i] == len(lista_combinaciones[i]))
+    else:
+        for exp in lista_expresiones[i]:
+            grados.append(grados_expresiones[exp]) # ir sumando recursivo el grado de cada expresión de las que depende
+
+        solver.add(grados_expresiones[i] == Sum(grados))
 
 # Debe existir una combinación de las expresiones tal que consigan bajar el grado del monomio a maxDeg
 for m in range(num_monomios):
-    selects = []  # Booleanos para indicar qué expresiones se usan para explicar el monomio m
+    selects = []  # Booleanos para indicar qué expresiones se usan para explicar el monomio m en concreto
+    grado = []
     for exp in range(num_expresiones):
         b = Bool("select_" + str(m) + "_" + str(exp))
         selects.append(b)
         # Solo puedes seleccionar expresiones activas
         solver.add(Implies(b, activas[exp]))
 
-    # Ahora forzamos que la suma ponderada de expresiones seleccionadas coincida con el monomio
+        grado.append(If(selects[exp], 1, grados_expresiones[i]))
+    
+    solver.add(Sum(grado) <= maxDeg)
+    solver.add(Sum(grado) >= 0)
+
+    # Ahora forzamos que el conjunto de expresiones seleccionadas coincida con el monomio
+    # Para cada variable, si el monomio la contiene, la suma de las variables de las expresiones que contribuyen a la disminución de su
+    # grado debe ser igual a las variables que tiene originalment el monomio
     for var in range(len(cjto_variables)):
         suma = []
         for exp in range(num_expresiones):
             # If selected, cuenta esa cantidad de variable
-            if num_variables_por_monomio[m][var] > 0:
+            if num_variables_por_monomio[m][var] > 0: # Si el monomio contiene dicha variable
                 suma.append(If(selects[exp], cuantas_originales[exp][var], 0))
-        solver.add(addsum(suma) == num_variables_por_monomio[m][var])
+        
+        # Para cada variable del monomio, la suma de dicha variable de las expresiones que forman el monomio debe ser igual a las que había originalmente
+        solver.add(Sum(suma) == num_variables_por_monomio[m][var])
 
     # Finalmente, al menos una expresión debe ser usada para cubrir el monomio
-    solver.add(addexists(selects))
+    solver.add(Or(selects))
 
 # print(lista_expresiones)
 
@@ -277,16 +301,16 @@ for m in range(num_monomios):
 #     # grados.append(deg)
 #     solver.add(grados_monomios[i] == degrees[i] - addsum(deg))
 
-# if solver.check() == sat:
-#     m = solver.model()
-
-#     for i in range(len(activas)):
-#         if is_true(m.eval(activas[i])):
-#             combo = reconstrucciones[i]
-#             nombre_variable = "*".join(combo) # Convierte la tupla ('x_1', 'x_2') a "x_1*x_2"
-#             print(f"Variable intermedia seleccionada: {nombre_variable}")
-
-# else: print("unsat")
-
-# print(solver.assertions())
 # file.write(solver.to_smt2())
+if solver.check() == sat:
+    m = solver.model()
+
+    for i in range(len(activas)):
+        if is_true(m.eval(activas[i])):
+            combo = expresiones[i]
+            nombre_variable = "*".join(combo) # Convierte la tupla ('x_1', 'x_2') a "x_1*x_2"
+            print(f"Variable intermedia seleccionada: {nombre_variable}")
+
+else: print("unsat")
+
+file.write(str(solver.assertions()))
