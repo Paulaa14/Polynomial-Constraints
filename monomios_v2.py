@@ -95,15 +95,12 @@ for p in range(num_polinomios):
         s = min_factores_monomio(factors, len(factors), maxDeg, set())
 
         print(s)
-        mon = set()
         factorizacion = []
 
         for f in s:
             for elem in f:
                 fact.add(elem)
-                # mon.add(elem)
             factorizacion.append(f)
-            mon = set()
         lista_conjuntos_monomios.append(factorizacion)
 
 # fact contiene los factores comunes de todos los monomios
@@ -114,6 +111,7 @@ print(fact)
 lista_conjuntos_monomios.sort(key=len) # Pongo los polinomios que tienen menos factorizaciones posibles primero
 print(lista_conjuntos_monomios) # Cada monomio, qué factores necesita sí o sí, posibles factorizaciones
 
+# Falta reducir el número de factores de cada monomio a los imprescindibles
 for factor in fact:
     for m in lista_monomios:
         break
