@@ -98,7 +98,7 @@ for p in range(num_polinomios):
 if mayor_grado_polinomio <= maxDeg:
     sys.exit("No es necesario añadir ninguna variable auxiliar.")
 
-variables_ordenadas = sorted(list(cjto_variables))
+cjto_variables = sorted(list(cjto_variables))
 
 num_variables_por_monomio = [] # Para cada monomio, cuántas variables de cada contiene
 for mon in lista_monomios:
@@ -112,124 +112,96 @@ print("Variables por monomio: " + str(num_variables_por_monomio))
 
 solver = Optimize()
 
-expresiones = set() # Indexando obtienes la expresión i-ésima para luego reconstruir recursivamente
-activas = []    
-num_expresiones = len(combinaciones)
 lista_combinaciones = list(combinaciones)
+num_combinaciones = len(lista_combinaciones)
 
-for i in range(len(combinaciones)):
-    expresiones.add((i, ))
+# Número de variables por nivel y número máximo de niveles, de momento a mano
+num_niveles = 3
+num_variables_por_nivel = 10
 
-# Como máximo vas a tener que meter tantas variables como el mayor grado dentro del polinomio. SE PUEDE ACOTAR MÁS
-# Primero se construyen todas las posibilidades. Otra opción es hacerlo dinámicamente
+# Matriz, para cada nivel, las variables que contiene
+variables_intermedias = []
+activas = []
 
-for i in range(3): # NUMERO AL AZAR EN PRINCIPIO - HEURÍSITICA LUEGO
-    for r in range(2, maxDeg + 1):
-        # Coge todas las anteriores
-        for combo in itertools.combinations_with_replacement(range(num_expresiones), r): # Así combina e1*e1... en vez de x1*x1
-            expresiones.add(tuple(sorted(combo)))
+for nivel in range(num_niveles):
+    variables_nivel = []
+    for elem in range(num_variables_por_nivel):
+        variables_nivel.append(Bool("x_" + str(nivel) + "_" + elem)) # Está activa la variable o no
+        activas.append(If(variables_nivel[elem], 1, 0))
 
-    num_expresiones = len(expresiones)
+    variables_intermedias.append(variables_nivel)
 
-# Lista de tuplas. Para cada expresión, de cuáles depende
-lista_expresiones = lista_expresiones = sorted(list(expresiones), key=lambda x: (len(x), x)) # Ordeno por primera componente
+solver.add(addsum(activas) <= max_intermedias) # Luego llevar aparte un contador de variables que realmente cuentan como activas y cuales no
 
-cuantas_originales = []
-cuenta_activas = []
+# Se cubren correctamente todas las variables en todas las variables intermedias
+cuantas_variables = []
 
-for i in range(num_expresiones):
-    activas.append(Bool("act_" + str(i)))
-
-    cuenta_activas.append(If(activas[i], 1, 0)) # Para contar cuántas hay activas
-
-    # E5 = E1*E1. Solo se puede usar E5 si se usa también E1. Recursivamente se va expandiendo
-    if i >= len(combinaciones): # No es una expresión del nivel 0
-        for exp in lista_expresiones[i]:
-            solver.add(Or(Not(activas[i]), activas[exp]))         # Implies(activas[i], activas[exp]))
-            
-        # El número de variables originales que contiene, es la suma de las que contienen las expresiones de las que depende
-        cuantas = []
-        for var in range(len(variables_ordenadas)):
-            c = []
-            cuantas.append(Int("cuantas_" + str(i) + "_" + str(var))) # La variable i cuántas variables var contiene
-            # Para cada expresión de las que depende, cuántas apariciones de var tienen
-            for exp in lista_expresiones[i]:
-                c.append(cuantas_originales[exp][var])
-                
-            solver.add(cuantas[var] == addsum(c)) # Había un implies activa[i]
+for nivel in range(num_niveles):
+    cuantas_nivel = []
+    for elem in range(num_variables_por_nivel):
+        variables_elem = []
+        for variable_original in range(len(cjto_variables)):
+            variables_elem.append(Int("var_" + str(nivel) + "_" + str(elem) + "_" + str(variable_original)))
         
-        cuantas_originales.append(cuantas)
+        cuantas_nivel.append(variables_elem)
+    cuantas_variables.append(cuantas_nivel)
 
-    else: # Combinaciones iniciales
-        cuantas = []
-        for var in range(len(variables_ordenadas)):
-            cuantas.append(Int("cuantas_" + str(i) + "_" + str(var))) # La variable i cuántas variables var contiene
-            count = combo.count("x_" + str(var))
+# De momento, cada nivel se forma con variables del nivel inmediatamente anterior y factores iniciales
+dependencias = []
+for nivel in range(num_niveles):
+    deps_nivel = []
+    for elem in range(num_variables_por_nivel):
+        deps_var = []
+        cumple_grado = []
+        cumple_var = []
 
-            solver.add(cuantas[var] == count)
-        
-        cuantas_originales.append(cuantas)
+        if nivel > 0:
+            # La variable elem de nivel utiliza o no la variable var del nivel anterior
+            for var in range(num_variables_por_nivel):
+                deps_var.append(Bool("depv_" + str(nivel) + "_" + str(elem) + "_" + str(var))) 
 
-solver.add(addsum(cuenta_activas) <= max_intermedias)
+                # Solo se puede utilizar si var está activa
+                solver.add(Implies(deps_var[var], variables_intermedias[nivel - 1][var]))
 
-grados_expresiones = []
-for i in range(num_expresiones):
-    grados_expresiones.append(Int("dege_" + str(i)))
+                # Si se utiliza esta variable de otro nivel, su grado es 1, sino 0
+                cumple_grado.append(If(deps_var[var], 1, 0))
 
-    solver.add(grados_expresiones[i] <= maxDeg)
-    solver.add(grados_expresiones[i] >= 0)
+                # Si se utiliza, aporta a elem tantas variables de cada como tenga
+                for variable_original in range(len(cjto_variables)):
+                    cumple_var.append(If(deps_var, cuantas_variables[nivel - 1][variable_original], 0))
 
-    grados = []
-    if i < len(combinaciones):
-        solver.add(grados_expresiones[i] == len(lista_combinaciones[i]))
-    else:
-        for exp in lista_expresiones[i]:
-            grados.append(grados_expresiones[exp]) # ir sumando recursivo el grado de cada expresión de las que depende
+        # La variable elem de nivel utiliza o no el factor fact
+        for fact in range(num_combinaciones):
+            elem = Bool("depf_" + str(nivel) + "_" + str(elem) + "_" + str(fact))
+            deps_var.append(elem)
 
-        solver.add(grados_expresiones[i] == addsum(grados))
+            # Si se utiliza, su grado es el del factor ya que se va a sustituir
+            cumple_grado.append(If(elem, len(lista_combinaciones[fact]), 0))
 
-# Debe existir una combinación de las expresiones tal que consigan bajar el grado del monomio a maxDeg
-for m in range(num_monomios):
-    # Booleanos para indicar qué expresiones se usan para explicar el monomio m en concreto para poder diferenciar luego al hacer la suma
-    selects = []  
-    grado = []
-    for exp in range(num_expresiones):
-        b = Bool("select_" + str(m) + "_" + str(exp))
-        selects.append(b)
-        # Solo puedes seleccionar expresiones activas
-        solver.add(Implies(b, activas[exp]))
+            # Si se utiliza, aporta a elem tantas variables de cada como tenga
+            cumple_var.append(If(elem, elem, 0)) ########################################
 
-        grado.append(If(selects[exp], 1, grados_expresiones[exp]))
+        # La suma del grado de todo lo que se utiliza para formar la variable debe ser menor o igual que el grado máximo
+        solver.add(addsum(cumple_grado) <= maxDeg)
+
+        # La suma de las variables que aportan cada una de las variables intermedias que utiliza esta expresión
+        # solver.add(cuantas_variables[nivel][]) # HACERLO PARA CADA VI, CON CADA VARIABLE ORIGINAL SUMANDO TANTO OTRAS VI COMO FACTORES
+
+        deps_nivel.append(deps_var)
     
-    solver.add(addsum(grado) <= maxDeg)
-    solver.add(addsum(grado) >= 0)
+    dependencias.append(deps_nivel)
 
-    # Ahora forzamos que el conjunto de expresiones seleccionadas coincida con el monomio
-    # Para cada variable, si el monomio la contiene, la suma de las variables de las expresiones que contribuyen a la disminución de su
-    # grado debe ser igual a las variables que tiene originalmente el monomio
-    for var in range(len(variables_ordenadas)):
-        suma = []
-        for exp in range(num_expresiones):
-            # If selected, cuenta esa cantidad de variable
-            if num_variables_por_monomio[m][var] > 0: # Si el monomio contiene dicha variable
-                suma.append(If(selects[exp], cuantas_originales[exp][var], 0))
-        
-        # Para cada variable del monomio, la suma de dicha variable de las expresiones que forman el monomio debe ser igual a las que había originalmente
-        solver.add(addsum(suma) == num_variables_por_monomio[m][var])
-
-    # Finalmente, al menos una expresión debe ser usada para cubrir el monomio
-    solver.add(Or(selects))
 
 # file.write(solver.to_smt2())
-if solver.check() == sat:
-    m = solver.model()
+# if solver.check() == sat:
+#     m = solver.model()
 
-    for i in range(len(activas)):
-        if is_true(m.eval(activas[i])):
-            combo = expresiones[i]
-            nombre_variable = "*".join(combo) # Convierte la tupla ('x_1', 'x_2') a "x_1*x_2"
-            print(f"Variable intermedia seleccionada: {nombre_variable}")
+#     for i in range(len(activas)):
+#         if is_true(m.eval(activas[i])):
+#             combo = expresiones[i]
+#             nombre_variable = "*".join(combo) # Convierte la tupla ('x_1', 'x_2') a "x_1*x_2"
+#             print(f"Variable intermedia seleccionada: {nombre_variable}")
 
-else: print("unsat")
+# else: print("unsat")
 
 file.write(str(solver.assertions()))
