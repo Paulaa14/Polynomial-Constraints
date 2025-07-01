@@ -53,9 +53,9 @@ def contains(variables, target):
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("filein", help=".json file including the tree structure",
+parser.add_argument("filein", help=".json file",
                     type=str)
-parser.add_argument("fileout", help= "Output file with the new expressions")
+parser.add_argument("fileout", help= "output file")
 
 args=parser.parse_args()
 
@@ -99,6 +99,8 @@ if mayor_grado_polinomio <= maxDeg:
     sys.exit("No es necesario añadir ninguna variable auxiliar.")
 
 cjto_variables = sorted(list(cjto_variables))
+lista_combinaciones = list(combinaciones)
+num_combinaciones = len(lista_combinaciones)
 
 num_variables_por_monomio = [] # Para cada monomio, cuántas variables de cada contiene
 for mon in lista_monomios:
@@ -107,13 +109,18 @@ for mon in lista_monomios:
         counts.append(mon.count("x_" + str(var)))
     num_variables_por_monomio.append(counts)
 
+num_variables_por_factor = [] # Para cada factor, cuántas variables de cada contiene
+for comb in lista_combinaciones:
+    counts = []
+    for var in cjto_variables:
+        counts.append(comb.count("x_" + str(var)))
+    num_variables_por_factor.append(counts)
+
 print("Combinaciones: " + str(combinaciones))
 print("Variables por monomio: " + str(num_variables_por_monomio))
+print("Variables por factor: " + str(num_variables_por_factor))
 
-solver = Optimize()
-
-lista_combinaciones = list(combinaciones)
-num_combinaciones = len(lista_combinaciones)
+solver = Solver()
 
 # Número de variables por nivel y número máximo de niveles, de momento a mano
 num_niveles = 3
@@ -126,25 +133,10 @@ activas = []
 for nivel in range(num_niveles):
     variables_nivel = []
     for elem in range(num_variables_por_nivel):
-        variables_nivel.append(Bool("x_" + str(nivel) + "_" + elem)) # Está activa la variable o no
+        variables_nivel.append(Bool("x_" + str(nivel) + "_" + str(elem))) # Está activa la variable o no
         activas.append(If(variables_nivel[elem], 1, 0))
 
     variables_intermedias.append(variables_nivel)
-
-solver.add(addsum(activas) <= max_intermedias) # Luego llevar aparte un contador de variables que realmente cuentan como activas y cuales no
-
-# Se cubren correctamente todas las variables en todas las variables intermedias
-cuantas_variables = []
-
-for nivel in range(num_niveles):
-    cuantas_nivel = []
-    for elem in range(num_variables_por_nivel):
-        variables_elem = []
-        for variable_original in range(len(cjto_variables)):
-            variables_elem.append(Int("var_" + str(nivel) + "_" + str(elem) + "_" + str(variable_original)))
-        
-        cuantas_nivel.append(variables_elem)
-    cuantas_variables.append(cuantas_nivel)
 
 # De momento, cada nivel se forma con variables del nivel inmediatamente anterior y factores iniciales
 dependencias = []
@@ -166,10 +158,6 @@ for nivel in range(num_niveles):
                 # Si se utiliza esta variable de otro nivel, su grado es 1, sino 0
                 cumple_grado.append(If(deps_var[var], 1, 0))
 
-                # Si se utiliza, aporta a elem tantas variables de cada como tenga
-                for variable_original in range(len(cjto_variables)):
-                    cumple_var.append(If(deps_var, cuantas_variables[nivel - 1][variable_original], 0))
-
         # La variable elem de nivel utiliza o no el factor fact
         for fact in range(num_combinaciones):
             elem = Bool("depf_" + str(nivel) + "_" + str(elem) + "_" + str(fact))
@@ -178,30 +166,143 @@ for nivel in range(num_niveles):
             # Si se utiliza, su grado es el del factor ya que se va a sustituir
             cumple_grado.append(If(elem, len(lista_combinaciones[fact]), 0))
 
-            # Si se utiliza, aporta a elem tantas variables de cada como tenga
-            cumple_var.append(If(elem, elem, 0)) ########################################
-
         # La suma del grado de todo lo que se utiliza para formar la variable debe ser menor o igual que el grado máximo
         solver.add(addsum(cumple_grado) <= maxDeg)
-
-        # La suma de las variables que aportan cada una de las variables intermedias que utiliza esta expresión
-        # solver.add(cuantas_variables[nivel][]) # HACERLO PARA CADA VI, CON CADA VARIABLE ORIGINAL SUMANDO TANTO OTRAS VI COMO FACTORES
 
         deps_nivel.append(deps_var)
     
     dependencias.append(deps_nivel)
 
+deps_monomios = []
+for mon in range(num_monomios):
+    deps_var = []
+    cumple_grado = []
+
+    if num_niveles > 0:
+        for var in range(num_variables_por_nivel):
+            deps_var.append(Bool("depmv_" + str(mon) + "_" + str(var)))
+
+            # Solo se puede utilizar si var está activa
+            solver.add(Implies(deps_var[var], variables_intermedias[num_niveles - 1][var]))
+
+            cumple_grado.append(If(deps_var[var], 1, 0))
+
+    for fact in range(num_combinaciones):
+        elem = Bool("depmf" + str(mon) + "_" + str(fact))
+        deps_var.append(elem)
+        cumple_grado.append(If(elem, 1, 0))
+
+    deps_monomios.append(deps_var)
+
+    solver.add(addsum(cumple_grado) <= maxDeg)
+
+# Se cubren correctamente todas las variables en todas las variables intermedias
+cuantas_variables = []
+
+# Declaración
+for nivel in range(num_niveles):
+    cuantas_nivel = []
+    for elem in range(num_variables_por_nivel):
+        variables_elem = []
+        for variable_original in range(len(cjto_variables)):
+            variables_elem.append(Int("var_" + str(nivel) + "_" + str(elem) + "_" + str(variable_original)))
+        
+        cuantas_nivel.append(variables_elem)
+    
+    cuantas_variables.append(cuantas_nivel)
+
+for nivel in range(num_niveles):
+    for elem in range(num_variables_por_nivel):
+        for variable_original in range(len(cjto_variables)):
+            conteo_var = []
+            if nivel > 0:
+                for var in range(num_variables_por_nivel):
+                    # Si se ha utilizado en esta VI aporta las variables que contenga
+                    conteo_var.append(If(dependencias[nivel][elem][var], cuantas_variables[nivel - 1][var][variable_original], 0))
+                
+                for fact in range(num_combinaciones):
+                    conteo_var.append(If(dependencias[nivel][elem][num_variables_por_nivel + fact], num_variables_por_factor[fact][variable_original], 0))    
+                    
+            else: 
+                for fact in range(num_combinaciones):
+                    conteo_var.append(If(dependencias[nivel][elem][fact], num_variables_por_factor[fact][variable_original], 0))    
+                 
+            solver.add(cuantas_variables[nivel][elem][variable_original] == addsum(conteo_var))
+
+for mon in range(num_monomios):
+    for var in range(len(cjto_variables)):
+        conteo_var = []
+        if num_niveles > 0:
+            for elem in range(num_variables_por_nivel):
+                conteo_var.append(If(deps_monomios[mon][elem], cuantas_variables[num_niveles - 1][elem][variable_original], 0))
+        
+            for fact in range(num_combinaciones):
+                conteo_var.append(If(deps_monomios[mon][num_variables_por_nivel + fact], num_variables_por_factor[fact][var], 0))
+
+        else:
+            for fact in range(num_combinaciones):
+                conteo_var.append(If(deps_monomios[mon][fact], num_variables_por_factor[fact][var], 0))
+
+        solver.add(addsum(conteo_var) == num_variables_por_monomio[mon][var])
+
+# cuentan_como_activas = []
+
+# for nivel in range(num_niveles):
+#     for elem in range(num_variables_por_nivel):
+#         vi = variables_intermedias[nivel][elem]  # La variable booleana: si está activa o no
+#         deps = dependencias[nivel][elem]  # Lista de dependencias (otras variables y factores)
+
+#         # Creamos una lista de condiciones: cada una es "esta dependencia está activa"
+#         usos = []
+#         for d in deps:
+#             usos.append(If(d, 1, 0))
+
+#         # Suma de variables usadas en esta expresión
+#         total_usadas = addsum(usos)
+
+#         # Solo cuenta como activa si se usa y además se usa junto a alguna otra
+#         # (es decir, total_usadas >= 2)
+#         usada_con_otra = And(vi, total_usadas >= 2)
+
+#         cuentan_como_activas.append(If(usada_con_otra, 1, 0))
+
+
+# solver.add(addsum(cuentan_como_activas) <= max_intermedias)
 
 # file.write(solver.to_smt2())
-# if solver.check() == sat:
-#     m = solver.model()
+if solver.check() == sat:
+    m = solver.model()
+    print("\n=== Variables intermedias seleccionadas ===\n")
+    
+    for nivel in range(num_niveles):
+        for elem in range(num_variables_por_nivel):
+            var_activa = variables_intermedias[nivel][elem]
+            if is_true(m.eval(var_activa)):
+                print(f"Nivel {nivel}, Variable {elem}:")
 
-#     for i in range(len(activas)):
-#         if is_true(m.eval(activas[i])):
-#             combo = expresiones[i]
-#             nombre_variable = "*".join(combo) # Convierte la tupla ('x_1', 'x_2') a "x_1*x_2"
-#             print(f"Variable intermedia seleccionada: {nombre_variable}")
+                deps = dependencias[nivel][elem]
+                usados = []
+                
+                # Variables del nivel anterior (si existen)
+                if nivel > 0:
+                    for var_prev in range(num_variables_por_nivel):
+                        dep = deps[var_prev]
+                        if is_true(m.eval(dep)):
+                            usados.append(f"VI(n{nivel-1},v{var_prev})")
 
-# else: print("unsat")
+                # Combinaciones base
+                offset = 0 if nivel == 0 else num_variables_por_nivel
+                for fact in range(num_combinaciones):
+                    dep_idx = offset + fact
+                    dep = deps[dep_idx]
+                    if is_true(m.eval(dep)):
+                        usados.append("*".join(lista_combinaciones[fact]))
 
-file.write(str(solver.assertions()))
+                print("  → Compuesta por:", ", ".join(usados))
+else:
+    print("UNSAT: No se encontró solución.")
+
+# file.write(str(solver.assertions()))
+
+with open("debug_constraints.smt2", "w") as out:
+    out.write(solver.to_smt2())
