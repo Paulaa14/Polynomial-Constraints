@@ -56,7 +56,7 @@ file = open(args.fileout, "w")
 polinomios = data["polinomials"]
 num_polinomios = data["num"]
 maxDeg = data["degree"]
-max_intermedias = 2
+max_intermedias = 3
 
 degrees = [] # Cada monomio qué grado tiene
 num_monomios = 0
@@ -112,8 +112,8 @@ print("Variables por factor: " + str(num_variables_por_factor))
 solver = Solver()
 
 # Número de variables por nivel y número máximo de niveles, de momento a mano
-num_niveles = 5
-num_variables_por_nivel = 5
+num_niveles = 3
+num_variables_por_nivel = 2
 
 # Matriz, para cada nivel, las variables que contiene
 variables_intermedias = []
@@ -275,46 +275,46 @@ for mon in range(num_monomios):
         solver.add(addsum(conteo_var) == num_variables_por_monomio[mon][var])
 
 # Tiene que estar activa y existir una del nivel siguiente que la utilice junto con otra
-# cuentan = []
-# suma_cuentan = []
+cuentan = []
+suma_cuentan = []
 
-# for nivel in range(num_niveles):
-#     for elem in range(num_variables_por_nivel):
-#         c = Bool("cuenta_" + str(nivel) + "_" + str(elem))
-#         suma_cuentan.append(If(c, 1, 0))
-#         cuentan.append(c)
-#         activas_sig_nivel = []
-#         if nivel < num_niveles - 1:
-#             # Hay alguna variable del siguiente nivel que tiene otra dependencia con un elemento de mi nivel que no es el que estoy mirando
-#             for aux in range(num_variables_por_nivel):
-#                 auxiliar = []
-#                 for var in range(num_variables_por_nivel):
-#                     if var != elem:
-#                         auxiliar.append(dependencias[nivel + 1][aux][var])
-#                     else:
-#                         auxiliar.append(If(dependencias[nivel + 1][aux][var] > 1, 1, 0))
+for nivel in range(num_niveles):
+    for elem in range(num_variables_por_nivel):
+        c = Bool("cuenta_" + str(nivel) + "_" + str(elem))
+        suma_cuentan.append(If(c, 1, 0))
+        cuentan.append(c)
+        activas_sig_nivel = []
+        if nivel < num_niveles - 1:
+            # Hay alguna variable del siguiente nivel que tiene otra dependencia con un elemento de mi nivel que no es el que estoy mirando
+            for aux in range(num_variables_por_nivel):
+                auxiliar = []
+                for var in range(num_variables_por_nivel):
+                    if var != elem:
+                        auxiliar.append(dependencias[nivel + 1][aux][var])
+                    else: # La propia variable se utiliza más de una vez
+                        auxiliar.append(If(dependencias[nivel + 1][aux][var] > 1, 1, 0))
 
-#                 for fact in range(num_combinaciones):
-#                     auxiliar.append(dependencias[nivel + 1][aux][fact + num_variables_por_nivel])
+                for fact in range(num_combinaciones):
+                    auxiliar.append(dependencias[nivel + 1][aux][fact + num_variables_por_nivel])
 
-#                 # Tiene activas tanto elem como aux y tener dependencia aux con elem
-#                 activas_sig_nivel.append(If(And(addsum(auxiliar) > 0, dependencias[nivel + 1][aux][elem] > 0, variables_intermedias[nivel + 1][aux]), 1, 0))
+                # Tiene activas tanto elem como aux y tener dependencia aux con elem
+                activas_sig_nivel.append(If(And(addsum(auxiliar) > 0, dependencias[nivel + 1][aux][elem] > 0, variables_intermedias[nivel + 1][aux]), 1, 0))
             
-#             # cuentan.append(If(And(variables_intermedias[nivel][elem], addsum(activas_sig_nivel) > 0), 1, 0))
-#             solver.add(Implies(And(variables_intermedias[nivel][elem], addsum(activas_sig_nivel) > 0), c))
-#             solver.add(Implies(c, And(variables_intermedias[nivel][elem], addsum(activas_sig_nivel) > 0)))
+            # cuentan.append(If(And(variables_intermedias[nivel][elem], addsum(activas_sig_nivel) > 0), 1, 0))
+            # solver.add(Implies(And(variables_intermedias[nivel][elem], addsum(activas_sig_nivel) > 0), c))
+            solver.add(Implies(c, And(variables_intermedias[nivel][elem], addsum(activas_sig_nivel) > 0)))
         
-#         else:
-#             # En el último nivel si está activa cuenta si la utiliza un monomio
-#             for mon in range(num_monomios):
-#                 # for var in range(num_variables_por_nivel):
-#                 # activas_sig_nivel.append(If(deps_monomios[mon][elem], 1, 0))
-#                 # cuentan.append(If(And(variables_intermedias[nivel][elem], deps_monomios[mon][elem]), 1, 0)) 
+        else:
+            # En el último nivel si está activa, cuenta si la utiliza un monomio
+            for mon in range(num_monomios):
+                # for var in range(num_variables_por_nivel):
+                # activas_sig_nivel.append(If(deps_monomios[mon][elem], 1, 0))
+                # cuentan.append(If(And(variables_intermedias[nivel][elem], deps_monomios[mon][elem]), 1, 0)) 
 
-#                 solver.add(Implies(And(variables_intermedias[nivel][elem], deps_monomios[mon][elem] > 0), c))           
-#                 solver.add(Implies(c, And(variables_intermedias[nivel][elem], deps_monomios[mon][elem] > 0)))           
+                # solver.add(Implies(And(variables_intermedias[nivel][elem], deps_monomios[mon][elem] > 0), c))           
+                solver.add(Implies(c, And(variables_intermedias[nivel][elem], deps_monomios[mon][elem] > 0)))           
 
-# solver.add(addsum(suma_cuentan) <= max_intermedias)
+solver.add(addsum(suma_cuentan) <= max_intermedias)
 
 # Hay que permitir que se puedan coger de todos los niveles en los monomios
 
