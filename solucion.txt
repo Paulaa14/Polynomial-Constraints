@@ -1,0 +1,78 @@
+niveles = 1
+variables = 2
+
+factor_0 = x1,x1
+factor_1 = x1,x2
+factor_2 = x1
+factor_3 = x2,x2
+
+orig_0 = x1
+orig_1 = x2
+
+mon_0 = x1^3
+mon_1 = x1^2 * x2
+mon_2 = x1 * x2^2
+mon_3 = x2^3
+
+depf_nivel_variable_factor -> depende la variable del factor
+depf_0_0_0, depf_0_1_0
+depf_0_0_1, depf_0_1_1
+depf_0_0_2, depf_0_1_2
+depf_0_0_3, depf_0_1_3
+
+assert(depf_0_0_0 = 1)      Para versión simplificada: depf_0_0_0 = 1, depf_0_0_1 = 0
+
+assert(depf_0_1_3 = 1)
+assert(depf_0_1_0 = 0)
+assert(depf_0_0_1 = 0)
+assert(depf_0_1_1 = 0)
+assert(depf_0_0_2 = 0)
+assert(depf_0_1_2 = 0)
+assert(depf_0_0_3 = 0)
+
+var_nivel_variable_original -> cuantas variables originales tiene variable de nivel
+
+assert(var_0_0_0 = 2) -> x1*x1
+assert(var_0_0_1 = 0)
+
+assert(var_0_1_0 = 0)
+assert(var_0_1_1 = 2) -> x2*x2
+
+depmv_mon_variable -> el monomio mon depende de variable 
+
+assert(depmv_0_0 = 1)
+assert(depmv_0_1 = 0)
+
+assert(depmv_1_0 = 1)
+assert(depmv_1_1 = 0)
+assert(depmv_2_0 = 0)
+assert(depmv_2_1 = 1)
+assert(depmv_3_0 = 0)
+assert(depmv_3_1 = 1)
+
+depmf_mon_factor -> el monomio mon depende de factor
+
+assert(depmf_0_0 = 0)
+assert(depmf_0_1 = 0)
+assert(depmf_0_2 = 1)
+assert(depmf_0_3 = 0)
+assert(depmf_0_4 = 0)
+
+assert(depmf_1_0 = 0)
+assert(depmf_1_1 = 0)
+assert(depmf_1_2 = 0)
+assert(depmf_1_3 = 0)
+assert(depmf_1_4 = 1)
+
+assert(depmf_2_0 = 0)
+assert(depmf_2_1 = 0)
+assert(depmf_2_2 = 1)
+assert(depmf_2_3 = 0)
+assert(depmf_2_4 = 0)
+
+assert(depmf_3_0 = 0)
+assert(depmf_3_1 = 0)
+assert(depmf_3_2 = 1)
+assert(depmf_3_3 = 0)
+assert(depmf_3_4 = 0)
+

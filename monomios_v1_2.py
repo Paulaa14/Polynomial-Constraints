@@ -288,8 +288,6 @@ for nivel in range(num_niveles):
 
 solver.add(addsum(suma_cuentan) <= max_intermedias)
 
-# Otra forma "reconstruyendo" hacia atrás desde las que están activas en los monomios
-
 # file.write(solver.to_smt2())
 
 if solver.check() == sat:

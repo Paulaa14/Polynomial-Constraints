@@ -5,6 +5,8 @@
 
 # Se podría llevar guardado en un array el grado de cada expresión para no calcularlo todo el rato
 
+# No permitir variables que tengan todo 0s
+
 from collections import defaultdict
 import itertools
 import json
@@ -54,7 +56,7 @@ file = open(args.fileout, "w")
 polinomios = data["polinomials"]
 num_polinomios = data["num"]
 maxDeg = data["degree"]
-max_intermedias = 30
+max_intermedias = 2
 
 degrees = [] # Cada monomio qué grado tiene
 num_monomios = 0
@@ -86,7 +88,7 @@ if mayor_grado_polinomio <= maxDeg:
     sys.exit("No es necesario añadir ninguna variable auxiliar.")
 
 cjto_variables = sorted(list(cjto_variables))
-lista_combinaciones = list(combinaciones)
+lista_combinaciones = sorted(list(combinaciones), key=str)
 num_combinaciones = len(lista_combinaciones)
 
 num_variables_por_monomio = [] # Para cada monomio, cuántas variables de cada contiene
@@ -103,15 +105,15 @@ for comb in lista_combinaciones:
         counts.append(comb.count("x_" + str(var)))
     num_variables_por_factor.append(counts)
 
-print("Combinaciones: " + str(combinaciones))
+print("Combinaciones: " + str(lista_combinaciones))
 print("Variables por monomio: " + str(num_variables_por_monomio))
 print("Variables por factor: " + str(num_variables_por_factor))
 
 solver = Solver()
 
 # Número de variables por nivel y número máximo de niveles, de momento a mano
-num_niveles = 3
-num_variables_por_nivel = 10
+num_niveles = 5
+num_variables_por_nivel = 5
 
 # Matriz, para cada nivel, las variables que contiene
 variables_intermedias = []
@@ -237,11 +239,11 @@ for mon in range(num_monomios):
             for variable_original in range(len(cjto_variables)):
                 grado_expresion.append(cuantas_variables[num_niveles - 1][variable][variable_original])
 
-            cumple_grado.append(deps_mon[variable] * addsum(grado_expresion))
+            cumple_grado.append(deps_mon[variable] * addsum(grado_expresion)) # NO LINEAL
             de_cuantas_depende.append(deps_mon[variable])
 
     for factor in range(num_combinaciones):
-        elem = Int("depmf" + str(mon) + "_" + str(factor))
+        elem = Int("depmf_" + str(mon) + "_" + str(factor))
         deps_mon.append(elem)
 
         solver.add(elem >= 0)
@@ -251,9 +253,9 @@ for mon in range(num_monomios):
 
     deps_monomios.append(deps_mon)
 
-    # CAMBIAR: LONGITUD INICIAL - SUMA DE LAS LONGITUDES DE LAS EXPRESIONES DE LAS QUE DEPENDE + NUMERO DE EXPRESIONES DE LAS QUE ESTÁ FORMADA
-    solver.add(len(lista_monomios[mon]) - addsum(cumple_grado) + addsum(de_cuantas_depende) <= maxDeg)
-    solver.add(len(lista_monomios[mon]) - addsum(cumple_grado) + addsum(de_cuantas_depende) >= 0)
+    # CAMBIAR: SUMA DE LAS LONGITUDES DE LAS EXPRESIONES DE LAS QUE DEPENDE + NUMERO DE EXPRESIONES DE LAS QUE ESTÁ FORMADA
+    solver.add(addsum(de_cuantas_depende) <= maxDeg)
+    solver.add(addsum(de_cuantas_depende) >= 0) # QUITAR CUMPLE GRADO
 
 # Cuento que se consigan todas las variables que tenía originalmente el monomio
 for mon in range(num_monomios):
@@ -273,48 +275,48 @@ for mon in range(num_monomios):
         solver.add(addsum(conteo_var) == num_variables_por_monomio[mon][var])
 
 # Tiene que estar activa y existir una del nivel siguiente que la utilice junto con otra
-cuentan = []
-suma_cuentan = []
+# cuentan = []
+# suma_cuentan = []
 
-for nivel in range(num_niveles):
-    for elem in range(num_variables_por_nivel):
-        c = Bool("cuenta_" + str(nivel) + "_" + str(elem))
-        suma_cuentan.append(If(c, 1, 0))
-        cuentan.append(c)
-        activas_sig_nivel = []
-        if nivel < num_niveles - 1:
-            # Hay alguna variable del siguiente nivel que tiene otra dependencia con un elemento de mi nivel que no es el que estoy mirando
-            for aux in range(num_variables_por_nivel):
-                auxiliar = []
-                for var in range(num_variables_por_nivel):
-                    if var != elem:
-                        auxiliar.append(dependencias[nivel + 1][aux][var])
-                    else:
-                        auxiliar.append(If(dependencias[nivel + 1][aux][var] > 1, 1, 0))
+# for nivel in range(num_niveles):
+#     for elem in range(num_variables_por_nivel):
+#         c = Bool("cuenta_" + str(nivel) + "_" + str(elem))
+#         suma_cuentan.append(If(c, 1, 0))
+#         cuentan.append(c)
+#         activas_sig_nivel = []
+#         if nivel < num_niveles - 1:
+#             # Hay alguna variable del siguiente nivel que tiene otra dependencia con un elemento de mi nivel que no es el que estoy mirando
+#             for aux in range(num_variables_por_nivel):
+#                 auxiliar = []
+#                 for var in range(num_variables_por_nivel):
+#                     if var != elem:
+#                         auxiliar.append(dependencias[nivel + 1][aux][var])
+#                     else:
+#                         auxiliar.append(If(dependencias[nivel + 1][aux][var] > 1, 1, 0))
 
-                for fact in range(num_combinaciones):
-                    auxiliar.append(dependencias[nivel + 1][aux][fact + num_variables_por_nivel])
+#                 for fact in range(num_combinaciones):
+#                     auxiliar.append(dependencias[nivel + 1][aux][fact + num_variables_por_nivel])
 
-                # Tiene activas tanto elem como aux y tener dependencia aux con elem
-                activas_sig_nivel.append(If(And(addsum(auxiliar) > 0, dependencias[nivel + 1][aux][elem] > 0, variables_intermedias[nivel + 1][aux]), 1, 0))
+#                 # Tiene activas tanto elem como aux y tener dependencia aux con elem
+#                 activas_sig_nivel.append(If(And(addsum(auxiliar) > 0, dependencias[nivel + 1][aux][elem] > 0, variables_intermedias[nivel + 1][aux]), 1, 0))
             
-            # cuentan.append(If(And(variables_intermedias[nivel][elem], addsum(activas_sig_nivel) > 0), 1, 0))
-            solver.add(Implies(And(variables_intermedias[nivel][elem], addsum(activas_sig_nivel) > 0), c))
-            solver.add(Implies(c, And(variables_intermedias[nivel][elem], addsum(activas_sig_nivel) > 0)))
+#             # cuentan.append(If(And(variables_intermedias[nivel][elem], addsum(activas_sig_nivel) > 0), 1, 0))
+#             solver.add(Implies(And(variables_intermedias[nivel][elem], addsum(activas_sig_nivel) > 0), c))
+#             solver.add(Implies(c, And(variables_intermedias[nivel][elem], addsum(activas_sig_nivel) > 0)))
         
-        else:
-            # En el último nivel si está activa cuenta si la utiliza un monomio
-            for mon in range(num_monomios):
-                # for var in range(num_variables_por_nivel):
-                # activas_sig_nivel.append(If(deps_monomios[mon][elem], 1, 0))
-                # cuentan.append(If(And(variables_intermedias[nivel][elem], deps_monomios[mon][elem]), 1, 0)) 
+#         else:
+#             # En el último nivel si está activa cuenta si la utiliza un monomio
+#             for mon in range(num_monomios):
+#                 # for var in range(num_variables_por_nivel):
+#                 # activas_sig_nivel.append(If(deps_monomios[mon][elem], 1, 0))
+#                 # cuentan.append(If(And(variables_intermedias[nivel][elem], deps_monomios[mon][elem]), 1, 0)) 
 
-                solver.add(Implies(And(variables_intermedias[nivel][elem], deps_monomios[mon][elem] > 0), c))           
-                solver.add(Implies(c, And(variables_intermedias[nivel][elem], deps_monomios[mon][elem] > 0)))           
+#                 solver.add(Implies(And(variables_intermedias[nivel][elem], deps_monomios[mon][elem] > 0), c))           
+#                 solver.add(Implies(c, And(variables_intermedias[nivel][elem], deps_monomios[mon][elem] > 0)))           
 
-solver.add(addsum(suma_cuentan) <= max_intermedias)
+# solver.add(addsum(suma_cuentan) <= max_intermedias)
 
-# Otra forma "reconstruyendo" hacia atrás desde las que están activas en los monomios
+# Hay que permitir que se puedan coger de todos los niveles en los monomios
 
 # file.write(solver.to_smt2())
 
@@ -398,5 +400,5 @@ if solver.check() == sat:
 else: print("UNSAT")
 # file.write(str(solver.assertions()))
 
-# with open("debug_constraints.smt2", "w") as out:
-#     out.write(solver.to_smt2())
+with open("debug_constraints.smt2", "w") as out:
+    out.write(solver.to_smt2())
