@@ -234,8 +234,8 @@ deps_monomios_con_factores = []
 for mon in range(num_monomios):
     deps_mon_v = []
     deps_mon_f = []
-    cumple_grado = []
     de_cuantas_depende = []
+    # cumple_grado = []
 
     if num_niveles > 0:
         for variable in range(num_variables_por_nivel):
@@ -247,11 +247,11 @@ for mon in range(num_monomios):
             # Solo se puede utilizar si var está activa
             solver.add(Implies(deps_mon_v[variable] > 0, variables_intermedias[num_niveles - 1][variable]))
 
-            grado_expresion = []
-            for variable_original in range(len(cjto_variables)):
-                grado_expresion.append(cuantas_variables[num_niveles - 1][variable][variable_original])
+            # grado_expresion = []
+            # for variable_original in range(len(cjto_variables)):
+            #     grado_expresion.append(cuantas_variables[num_niveles - 1][variable][variable_original])
 
-            cumple_grado.append(deps_mon_v[variable] * addsum(grado_expresion)) # NO LINEAL
+            # cumple_grado.append(deps_mon_v[variable] * addsum(grado_expresion)) # NO LINEAL
             de_cuantas_depende.append(deps_mon_v[variable])
 
     for factor in range(num_combinaciones):
@@ -266,7 +266,7 @@ for mon in range(num_monomios):
     deps_monomios_con_variables.append(deps_mon_v)
     deps_monomios_con_factores.append(deps_mon_f)
 
-    # CAMBIAR: SUMA DE LAS LONGITUDES DE LAS EXPRESIONES DE LAS QUE DEPENDE + NUMERO DE EXPRESIONES DE LAS QUE ESTÁ FORMADA
+    # CAMBIAR: SUMA DE LAS LONGITUDES DE LAS EXPRESIONES DE LAS QUE DEPENDE
     solver.add(addsum(de_cuantas_depende) <= maxDeg)
     solver.add(addsum(de_cuantas_depende) >= 0) # QUITAR CUMPLE GRADO
 
@@ -309,17 +309,12 @@ for nivel in range(num_niveles):
                 # Tiene activas tanto elem como aux y tener dependencia aux con elem
                 activas_sig_nivel.append(If(And(addsum(auxiliar) > 0, dependencias_con_variables[nivel + 1][aux][elem] > 0, variables_intermedias[nivel + 1][aux]), 1, 0))
             
-            # cuentan.append(If(And(variables_intermedias[nivel][elem], addsum(activas_sig_nivel) > 0), 1, 0))
             # solver.add(Implies(And(variables_intermedias[nivel][elem], addsum(activas_sig_nivel) > 0), c))
             solver.add(Implies(c, And(variables_intermedias[nivel][elem], addsum(activas_sig_nivel) > 0)))
         
         else:
             # En el último nivel si está activa, cuenta si la utiliza un monomio
             for mon in range(num_monomios):
-                # for var in range(num_variables_por_nivel):
-                # activas_sig_nivel.append(If(deps_monomios[mon][elem], 1, 0))
-                # cuentan.append(If(And(variables_intermedias[nivel][elem], deps_monomios[mon][elem]), 1, 0)) 
-
                 # solver.add(Implies(And(variables_intermedias[nivel][elem], deps_monomios[mon][elem] > 0), c))           
                 solver.add(Implies(c, And(variables_intermedias[nivel][elem], deps_monomios_con_variables[mon][elem] > 0)))           
 
