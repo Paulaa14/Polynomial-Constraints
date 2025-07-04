@@ -5,8 +5,6 @@
 
 # Se podría llevar guardado en un array el grado de cada expresión para no calcularlo todo el rato
 
-# No permitir variables que tengan todo 0s
-
 from collections import defaultdict
 import itertools
 import json
@@ -88,7 +86,7 @@ if mayor_grado_polinomio <= maxDeg:
     sys.exit("No es necesario añadir ninguna variable auxiliar.")
 
 cjto_variables = sorted(list(cjto_variables))
-lista_combinaciones = sorted(list(combinaciones), key=str)
+lista_combinaciones = sorted(list(combinaciones), key=str) # Ordenar por el toString de la combinación
 num_combinaciones = len(lista_combinaciones)
 
 num_variables_por_monomio = [] # Para cada monomio, cuántas variables de cada contiene
@@ -98,6 +96,7 @@ for mon in lista_monomios:
         counts.append(mon.count("x_" + str(var)))
     num_variables_por_monomio.append(counts)
 
+    
 num_variables_por_factor = [] # Para cada factor, cuántas variables de cada contiene
 for comb in lista_combinaciones:
     counts = []
@@ -219,7 +218,7 @@ for nivel in range(num_niveles):
             if nivel > 0:
                 for var in range(num_variables_por_nivel):
                     # Si se ha utilizado en esta VI aporta las variables que contenga
-                    conteo_var.append(dependencias_con_variables[nivel][elem][var] * cuantas_variables[nivel - 1][var][variable_original])
+                    conteo_var.append(dependencias_con_variables[nivel][elem][var] * cuantas_variables[nivel - 1][var][variable_original]) # !!!
               
             for fact in range(num_combinaciones):
                 conteo_var.append(dependencias_con_factores[nivel][elem][fact] * num_variables_por_factor[fact][variable_original])    
@@ -268,7 +267,7 @@ for mon in range(num_monomios):
 
     # CAMBIAR: SUMA DE LAS LONGITUDES DE LAS EXPRESIONES DE LAS QUE DEPENDE
     solver.add(addsum(de_cuantas_depende) <= maxDeg)
-    solver.add(addsum(de_cuantas_depende) >= 0) # QUITAR CUMPLE GRADO
+    solver.add(addsum(de_cuantas_depende) >= 0)
 
 # Cuento que se consigan todas las variables que tenía originalmente el monomio
 for mon in range(num_monomios):
@@ -276,7 +275,7 @@ for mon in range(num_monomios):
         conteo_var = []
         if num_niveles > 0:
             for elem in range(num_variables_por_nivel):
-                conteo_var.append(deps_monomios_con_variables[mon][elem] * cuantas_variables[num_niveles - 1][elem][var])
+                conteo_var.append(deps_monomios_con_variables[mon][elem] * cuantas_variables[num_niveles - 1][elem][var]) # !!!
         
         for fact in range(num_combinaciones):
             conteo_var.append(deps_monomios_con_factores[mon][fact] * num_variables_por_factor[fact][var])
@@ -319,8 +318,6 @@ for nivel in range(num_niveles):
                 solver.add(Implies(c, And(variables_intermedias[nivel][elem], deps_monomios_con_variables[mon][elem] > 0)))           
 
 solver.add(addsum(suma_cuentan) <= max_intermedias)
-
-# Hay que permitir que se puedan coger de todos los niveles en los monomios
 
 # file.write(solver.to_smt2())
 

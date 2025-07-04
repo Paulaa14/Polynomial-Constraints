@@ -82,7 +82,7 @@ if mayor_grado_polinomio <= maxDeg:
     sys.exit("No es necesario añadir ninguna variable auxiliar.")
 
 cjto_variables = sorted(list(cjto_variables))
-lista_combinaciones = list(combinaciones)
+lista_combinaciones = sorted(list(combinaciones), key=str)
 num_combinaciones = len(lista_combinaciones)
 
 num_variables_por_monomio = [] # Para cada monomio, cuántas variables de cada contiene
