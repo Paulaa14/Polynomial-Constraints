@@ -55,11 +55,11 @@ file = open(args.fileout, "w")
 polinomios = data["polinomials"]
 num_polinomios = data["num"]
 maxDeg = data["degree"]
-max_intermedias = 3
+max_intermedias = 10
 
 # Número de variables por nivel y número máximo de niveles, de momento los valores se ponen a mano
-num_niveles = 3
-num_variables_por_nivel = 2
+# num_niveles = 3
+# num_variables_por_nivel = 2
 
 degrees = [] # Cada monomio qué grado tiene
 num_monomios = 0
@@ -114,6 +114,9 @@ print("Variables por monomio: " + str(num_variables_por_monomio))
 print("Variables por factor: " + str(num_variables_por_factor))
 
 solver = Solver()
+
+num_niveles = max(1, int(math.ceil(math.log(mayor_grado_polinomio + 1, 2))))  # log base 2
+num_variables_por_nivel = max(2, math.ceil(num_monomios))
 
 activas = []
 for nivel in range(num_niveles):
