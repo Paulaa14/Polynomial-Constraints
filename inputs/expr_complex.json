@@ -30,5 +30,5 @@
       { "coef": 1, "factors": [ { "signal": 1, "degree": 2 }, { "signal": 2, "degree": 1 }, { "signal": 3, "degree": 3 } ] }
     ]}
     ],
-    "degree": 3
+    "degree": 4
 }
