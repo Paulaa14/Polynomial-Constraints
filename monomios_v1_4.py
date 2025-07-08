@@ -61,6 +61,8 @@ combinaciones = set()
 mayor_grado_polinomio = 0
 cjto_variables = set()
 lista_monomios = []
+# lista_monomios_a_reducir = []
+# num_monomios_a_reducir = 0
 
 for p in range(num_polinomios):
     monomios = polinomios[p]["monomials"]
@@ -76,6 +78,9 @@ for p in range(num_polinomios):
 
         expanded = expand_factors(monomio["factors"])
         lista_monomios.append(expanded)
+        # if grado > maxDeg: 
+        #     lista_monomios_a_reducir.append(expanded)
+        #     num_monomios_a_reducir += 1
 
         cb = generate_combinations(expanded, maxDeg)
         combinaciones.update(cb)
@@ -164,6 +169,22 @@ def orden_huecos_variables(ocupacion_huecos_variables_v, ocupacion_huecos_variab
                                 for factores_anteriores in range(0, factor):
                                     solver.add(Implies(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], Not(ocupacion_huecos_variables_f[nivel][variable][hueco_sig][factores_anteriores])))
     
+def orden_variables_nivel(ocupacion_huecos_variables_f):
+    for nivel in range(num_niveles):
+        for variable in range(num_variables_por_nivel - 1):
+            contiene_factores_actual = []
+            contiene_factores_sig = []
+
+            for hueco in range(maxDeg):
+                for factor in range(num_combinaciones):
+                    contiene_factores_actual.append(If(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], 1, 0))
+
+            for hueco_var_sig in range(maxDeg):
+                for factores_var_sig in range(num_combinaciones):
+                    contiene_factores_sig.append(If(ocupacion_huecos_variables_f[nivel][variable + 1][hueco_var_sig][factores_var_sig], 1, 0))
+
+            solver.add(Implies(addsum(contiene_factores_actual) == 0, addsum(contiene_factores_sig) == 0))
+
 # Se obliga a rellenar los huecos de arriba a abajo, si un hueco está vacío, todos los siguientes también
 def rellenar_huecos_variables_en_orden(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f):
     suma_actual = []
@@ -204,7 +225,7 @@ def variables_distintas_nivel(ocupacion_huecos_variables_v, ocupacion_huecos_var
                         ocurrencias_vi2.append(If(ocupacion_huecos_variables_v[nivel][vi2][hueco][var], 1, 0))
                     count_vi2 = addsum(ocurrencias_vi2)
 
-                    # Si la cuenta no coincide, lo anotamos como diferencia
+                    # Si la cuenta no coincide, diferencia
                     diferencias.append(If(count_vi1 != count_vi2, 1, 0))
 
             for fact in range(num_combinaciones):
@@ -220,7 +241,7 @@ def variables_distintas_nivel(ocupacion_huecos_variables_v, ocupacion_huecos_var
                     ocurrencias_vi2.append(If(ocupacion_huecos_variables_f[nivel][vi2][hueco][fact], 1, 0))
                 count_vi2 = addsum(ocurrencias_vi2)
 
-                # Si la cuenta no coincide, lo anotamos como diferencia
+                # Si la cuenta no coincide, diferencia
                 diferencias.append(If(count_vi1 != count_vi2, 1, 0))
 
             # Si ambas VI están activas, deben diferir en al menos una dependencia (aunque en distinto orden)
@@ -256,7 +277,7 @@ def restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variab
                 rellenar_huecos_variables_en_orden(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f)
             
             # La suma del grado de todo lo que se utiliza para formar la variable debe ser menor o igual que el grado máximo
-            solver.add(addsum(cumple_grado) <= maxDeg) # Creo que OK porque no superan el grado
+            solver.add(addsum(cumple_grado) <= maxDeg)
 
             # Eliminar variables que están formadas por una única variable intermedia/factor o por ninguna
             solver.add(addsum(variables_activas_por_var) > 1)
@@ -442,9 +463,10 @@ ocupacion_huecos_variables_f = []
 
 composicion_variables_intermedias(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f)
 orden_huecos_variables(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f)
-restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f)
-                
-################ Dentro de un mismo nivel, primero van las variables que contienen factores y luego las que no
+orden_variables_nivel(ocupacion_huecos_variables_f)
+
+# Dentro de un mismo nivel, primero van las variables que contienen factores y luego las que no
+restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f)                
 
 # Se cubren correctamente todas las variables originales en todas las variables intermedias
 cuantas_variables = []
