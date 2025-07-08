@@ -112,9 +112,9 @@ print("Variables por factor: " + str(num_variables_por_factor))
 solver = Solver()
 
 ##### PARAMETROS #####
-num_niveles = 3 # max(1, int(math.ceil(math.log(mayor_grado_polinomio + 1, 2))))  # log base 2
-num_variables_por_nivel = 2 # max(2, math.ceil(num_monomios))
-max_intermedias = 3
+num_niveles = max(1, int(math.ceil(math.log(mayor_grado_polinomio + 1, 2))))  # log base 2 del mayor grado del polinomio
+num_variables_por_nivel = max(2, math.ceil(num_monomios))
+max_intermedias = 10
 
 def composicion_variables_intermedias(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f):
     for nivel in range(num_niveles):
@@ -337,10 +337,9 @@ def orden_huecos_monomios(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios
         if degree[mon] <= maxDeg:
 
             for hueco in range(maxDeg):
-
                 if num_niveles > 0:
-                    for variable_nivel_anterior in range(num_variables_por_nivel):
-                        
+
+                    for variable_nivel_anterior in range(num_variables_por_nivel): 
                         for hueco_sig in range(hueco + 1, maxDeg):
                             for variables_anteriores in range(0, variable_nivel_anterior):
                                 solver.add(Implies(ocupacion_huecos_monomios_v[mon][hueco][variable_nivel_anterior], Not(ocupacion_huecos_monomios_v[mon][hueco_sig][variables_anteriores])))
@@ -399,18 +398,17 @@ def restricciones_huecos_m(ocupacion_huecos_monomios_v, ocupacion_huecos_monomio
 
             solver.add(Implies(addsum(suma_actual) == 0, addsum(suma_siguiente) == 0))
 
-        # SUMA DE LAS LONGITUDES DE LAS EXPRESIONES DE LAS QUE DEPENDE
-        solver.add(addsum(de_cuantas_depende) <= maxDeg) # NO ES TRIVIAL por contrucción porque al poder meter factores, el grado aumenta
+        # SUMA DE LAS LONGITUDES DE LAS EXPRESIONES DE LAS QUE DEPENDE. NO ES TRIVIAL por contrucción porque al poder meter factores, el grado aumenta
+        solver.add(addsum(de_cuantas_depende) <= maxDeg) 
 
 def cubre_variables_m(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f):
     for mon in range(num_monomios):
         for var in range(len(cjto_variables)):
             conteo_var = []
             for hueco in range(maxDeg):
-                if num_niveles > 0:
-                    if degree[mon] > maxDeg:
-                        for elem in range(num_variables_por_nivel):
-                            conteo_var.append(If(ocupacion_huecos_monomios_v[mon][hueco][elem], cuantas_variables[num_niveles - 1][elem][var], 0))
+                if num_niveles > 0 and degree[mon] > maxDeg:
+                    for elem in range(num_variables_por_nivel):
+                        conteo_var.append(If(ocupacion_huecos_monomios_v[mon][hueco][elem], cuantas_variables[num_niveles - 1][elem][var], 0))
 
                 for fact in range(num_combinaciones):
                     conteo_var.append(If(ocupacion_huecos_monomios_f[mon][hueco][fact], num_variables_por_factor[fact][var], 0))
@@ -454,6 +452,8 @@ def restricciones_cuentan(cuentan, suma_cuentan):
         for elem in range(num_variables_por_nivel):
             suma_cuentan.append(If(cuentan[nivel][elem], 1, 0))
             # solver.add_soft(Not(cuentan[nivel][elem]), 1, "cuentan")
+
+#######################################################################################################################################
 
 activas = []
 for nivel in range(num_niveles):

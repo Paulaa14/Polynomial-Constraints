@@ -1,5 +1,5 @@
 {
-    "num": 1,
+    "num": 4,
     "polinomials":
     [
     {"monomials":
@@ -8,6 +8,16 @@
       {"coef": -3, "factors": [{"signal": 1, "degree": 2}, {"signal": 2, "degree": 1}]},
       {"coef": 3, "factors": [{"signal": 2, "degree": 2}, {"signal": 1, "degree": 1}]},
       {"coef": -1, "factors": [{"signal": 2, "degree": 3}]}
-    ]}],
+    ]},
+    {"monomials": [{"coef": 1,"factors": [{ "signal": 1, "degree": 2 },{ "signal": 3, "degree": 1 }]},
+      {"coef": 1,"factors": [{ "signal": 1, "degree": 2 },{ "signal": 2, "degree": 1 }]},
+      {"coef": 2,"factors": [{ "signal": 2, "degree": 1 },{ "signal": 3, "degree": 1 }]}
+    ]},
+    {"monomials":[
+     {"coef": 1,"factors": [{"signal": 1,"degree": 12}]}  
+    ]},
+    {
+		"monomials":[{"coef": 1,"factors": [{ "signal": 1,"degree": 4},{"signal": 2,"degree": 4}]}]
+    }],
     "degree": 2
 }
