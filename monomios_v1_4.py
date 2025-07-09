@@ -6,8 +6,6 @@
 A partir de la versión entera, pasar a booleanos y añadir la idea de que una VI/monomio tiene para formarse, como máximo, maxDeg huecos que puede
 rellenar con otras VI del nivel anterior, factores, o dejarlo vacío
 
-Coger factores que mas aparecen y empezar a sustituir por ahí
-
 """
 
 import itertools
@@ -35,7 +33,7 @@ def expand_factors(factors): # [x_1, x_1, x_2]
 def generate_combinations(expanded, maxDeg):
     combinaciones = set() # Conjunto para que no se repitan los elementos
 
-    for r in range(1, min(maxDeg, len(expanded)) + 1): # Para que solo saque expresiones como mucho de maxDeg, el resto no me sirven como variables intermedias
+    for r in range(1, 2): # min(maxDeg, len(expanded)) + 1): # Para que solo saque expresiones como mucho de maxDeg, el resto no me sirven como variables intermedias
         # combinations(p, r) -> tuplas de longitud r ordenadas y no repetidas de los elementos en p
         for combo in itertools.combinations(expanded, r):
             combinaciones.add(combo)
@@ -115,8 +113,8 @@ print("Variables por factor: " + str(num_variables_por_factor))
 solver = Solver()
 
 ##### PARAMETROS #####
-num_niveles = 5 # max(1, int(math.ceil(math.log(mayor_grado_polinomio + 1, 2))))  # log base 2 del mayor grado del polinomio
-num_variables_por_nivel = 10 # max(2, math.ceil(num_monomios))
+num_niveles = 1 # max(1, int(math.ceil(math.log(mayor_grado_polinomio + 1, 2))))  # log base 2 del mayor grado del polinomio
+num_variables_por_nivel = 3 # max(2, math.ceil(num_monomios))
 max_intermedias = 3
 
 # Declaración de los huecos de los que disponen las VI para formarse
@@ -147,7 +145,7 @@ def composicion_variables_intermedias(ocupacion_huecos_variables_v, ocupacion_hu
         ocupacion_huecos_variables_f.append(huecos_nivel_f)
 
 # Para todo hueco, los siguientes deben tener índice mayor. Todos los índices anteriores no deben estar activados. Primero aparecen otras VI y luego los factores
-def orden_huecos_variables(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f): # OK
+def orden_huecos_variables(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f):
     for nivel in range(num_niveles):
         for variable in range(num_variables_por_nivel):
             for hueco in range(maxDeg):
@@ -172,7 +170,7 @@ def orden_huecos_variables(ocupacion_huecos_variables_v, ocupacion_huecos_variab
                                     solver.add(Implies(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], Not(ocupacion_huecos_variables_f[nivel][variable][hueco_sig][factores_anteriores])))
     
 # Dentro de un mismo nivel, primero aparecen las VI que contienen factores y luego las que no
-def orden_variables_nivel(ocupacion_huecos_variables_f): # OK
+def orden_variables_nivel(ocupacion_huecos_variables_f):
     for nivel in range(1, num_niveles): # El primer nivel siempre va a tener solo factores
         for variable in range(num_variables_por_nivel - 1):
             contiene_factores_actual = []

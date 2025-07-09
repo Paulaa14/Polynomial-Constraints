@@ -18,7 +18,16 @@
     {"coef": 1,"factors": [{"signal": 2,"degree": 1}, {"signal": 4, "degree": 1}, {"signal": 5, "degree": 1}]},
     {"coef": 3,"factors": [{"signal": 2,"degree": 1}, {"signal": 4, "degree": 1}]},
     {"coef": 2,"factors": [{"signal": 2,"degree": 1}, {"signal": 5, "degree": 1}]},
-    {"coef": 6,"factors": [{"signal": 2,"degree": 1}]}
+    {"coef": 6,"factors": [{"signal": 2,"degree": 1}]},
+    {"coef": 1,"factors": [{"signal": 4,"degree": 1}, {"signal": 5, "degree": 1}]},
+    {"coef": 3,"factors": [{"signal": 4,"degree": 1}]},
+    {"coef": 2,"factors": [{"signal": 5, "degree": 1}]},
+    {"coef": 1,"factors": [{"signal": 3,"degree": 1}, {"signal": 5, "degree": 1}]},
+    {"coef": 3,"factors": [{"signal": 3,"degree": 1}]},
+    {"coef": 1,"factors": [{"signal": 5, "degree": 1}]},
+    {"coef": 1,"factors": [{"signal": 3,"degree": 1}, {"signal": 4, "degree": 1}]},
+    {"coef": 1,"factors": [{"signal": 4,"degree": 1}]},
+    {"coef": 2,"factors": [{"signal": 3,"degree": 1}]}
     ]}],
-    "degree": 2
+    "degree": 3
 }
