@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# A partir de la versión entera, pasar a booleanos y añadir la idea de que una VI/monomio tiene para formarse, como máximo, maxDeg huecos que puede
-# rellenar con otras VI, factores, o dejarlo vacío
+"""
+
+A partir de la versión entera, pasar a booleanos y añadir la idea de que una VI/monomio tiene para formarse, como máximo, maxDeg huecos que puede
+rellenar con otras VI, factores, o dejarlo vacío
+
+"""
 
 import itertools
 import json
@@ -91,14 +95,16 @@ cjto_variables = sorted(list(cjto_variables))
 lista_combinaciones = sorted(list(combinaciones), key=str) # Ordenar por el toString de la combinación
 num_combinaciones = len(lista_combinaciones)
 
-num_variables_por_monomio = [] # Para cada monomio, cuántas variables de cada contiene
+# Para cada monomio, cuántas variables de cada contiene
+num_variables_por_monomio = []
 for mon in lista_monomios:
     counts = []
     for var in cjto_variables:
         counts.append(mon.count("x_" + str(var)))
     num_variables_por_monomio.append(counts)
     
-num_variables_por_factor = [] # Para cada factor, cuántas variables de cada contiene
+# Para cada factor, cuántas variables de cada contiene
+num_variables_por_factor = []
 for comb in lista_combinaciones:
     counts = []
     for var in cjto_variables:
@@ -116,6 +122,7 @@ num_niveles = max(1, int(math.ceil(math.log(mayor_grado_polinomio + 1, 2))))  # 
 num_variables_por_nivel = max(2, math.ceil(num_monomios))
 max_intermedias = 10
 
+# Declaración de los huecos de los que disponen las VI para formarse
 def composicion_variables_intermedias(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f):
     for nivel in range(num_niveles):
         huecos_nivel_v = []
@@ -142,7 +149,7 @@ def composicion_variables_intermedias(ocupacion_huecos_variables_v, ocupacion_hu
         ocupacion_huecos_variables_v.append(huecos_nivel_v)
         ocupacion_huecos_variables_f.append(huecos_nivel_f)
 
-# Para todo hueco, los siguientes deben tener índice mayor. Todos los índices anteriores no deben estar activados
+# Para todo hueco, los siguientes deben tener índice mayor. Todos los índices anteriores no deben estar activados. Primero aparecen otras VI y luego los factores
 def orden_huecos_variables(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f):
     for nivel in range(num_niveles):
         for variable in range(num_variables_por_nivel):
@@ -167,8 +174,9 @@ def orden_huecos_variables(ocupacion_huecos_variables_v, ocupacion_huecos_variab
                                 for factores_anteriores in range(0, factor):
                                     solver.add(Implies(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], Not(ocupacion_huecos_variables_f[nivel][variable][hueco_sig][factores_anteriores])))
     
+# Dentro de un mismo nivel, primero aparecen las VI que contienen factores y luego las que no
 def orden_variables_nivel(ocupacion_huecos_variables_f):
-    for nivel in range(num_niveles):
+    for nivel in range(1, num_niveles): # El primer nivel siempre va a tener solo factores
         for variable in range(num_variables_por_nivel - 1):
             contiene_factores_actual = []
             contiene_factores_sig = []
@@ -203,6 +211,7 @@ def rellenar_huecos_variables_en_orden(ocupacion_huecos_variables_v, ocupacion_h
 
     solver.add(Implies(addsum(suma_actual) == 0, addsum(suma_siguiente) == 0))
 
+# No puede haber 2 variables iguales en el mismo nivel
 def variables_distintas_nivel(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, nivel, activas):
     for vi1 in range(num_variables_por_nivel):
         for vi2 in range(vi1 + 1, num_variables_por_nivel):
@@ -244,6 +253,7 @@ def variables_distintas_nivel(ocupacion_huecos_variables_v, ocupacion_huecos_var
             # Si ambas VI están activas, deben diferir en al menos una dependencia (aunque en distinto orden)
             solver.add(Implies(And(activas[nivel][vi1], activas[nivel][vi2]), addsum(diferencias) > 0)) # Quitar que tengan que estar activas????
 
+# Restricciones de ocupación de los huecos de las VI
 def restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, activas):
     for nivel in range(num_niveles):
         for variable in range(num_variables_por_nivel):
@@ -282,6 +292,7 @@ def restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variab
             # Todas las variables de un mismo nivel deben ser distintas, porque luego se da la opción de poder elegirla más de una vez en huecos distintos
             variables_distintas_nivel(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, nivel, activas)
 
+# Cuántas variables originales cubre esta VI con los elementos que ocupan sus huecos
 def cubre_variables_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, cuantas_variables):
 
     for nivel in range(num_niveles):
@@ -310,6 +321,7 @@ def cubre_variables_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f
                             
                 solver.add(cuantas_variables[nivel][elem][variable_original] == addsum(conteo_var))
 
+# Declaración de los huecos de los que disponen los monomios para formarse
 def composicion_monomios(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f):
     for mon in range(num_monomios):
         huecos_monomio_v = []
@@ -332,9 +344,10 @@ def composicion_monomios(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_
         ocupacion_huecos_monomios_v.append(huecos_monomio_v)
         ocupacion_huecos_monomios_f.append(huecos_monomio_f)
 
+# Para todo hueco, los siguientes deben tener índice mayor. Todos los índices anteriores no deben estar activados. Se podría unificar en una función con la de las variables
 def orden_huecos_monomios(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f):
     for mon in range(num_monomios):
-        if degree[mon] <= maxDeg:
+        if degree[mon] <= maxDeg: # No debería necesitar formarse con VI, solo con factores
 
             for hueco in range(maxDeg):
                 if num_niveles > 0:
@@ -358,6 +371,7 @@ def orden_huecos_monomios(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios
                                 for factores_anteriores in range(0, factor):
                                     solver.add(Implies(ocupacion_huecos_monomios_f[mon][hueco][factor], Not(ocupacion_huecos_monomios_f[mon][hueco_sig][factores_anteriores])))
 
+# Restricciones de ocupación de los huecos de los monomios
 def restricciones_huecos_m(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f):
     for mon in range(num_monomios):
         de_cuantas_depende = []
@@ -401,6 +415,7 @@ def restricciones_huecos_m(ocupacion_huecos_monomios_v, ocupacion_huecos_monomio
         # SUMA DE LAS LONGITUDES DE LAS EXPRESIONES DE LAS QUE DEPENDE. NO ES TRIVIAL por contrucción porque al poder meter factores, el grado aumenta
         solver.add(addsum(de_cuantas_depende) <= maxDeg) 
 
+# Comprobación de que con los elementos que ocupan los huecos del monomio se cubren todas las variables originales que tenía en un inicio
 def cubre_variables_m(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f):
     for mon in range(num_monomios):
         for var in range(len(cjto_variables)):
@@ -415,6 +430,7 @@ def cubre_variables_m(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f):
 
             solver.add(addsum(conteo_var) == num_variables_por_monomio[mon][var])
 
+# Qué variables realmente cuentan
 def restricciones_cuentan(cuentan, suma_cuentan):
     # Se utiliza en la variable y el número de huecos ocupados en dicha variable es mayor que 1
     for nivel in range(num_niveles):
@@ -455,6 +471,7 @@ def restricciones_cuentan(cuentan, suma_cuentan):
 
 #######################################################################################################################################
 
+# La VI está activa o no - Booleano
 activas = []
 for nivel in range(num_niveles):
     variables_nivel = []
@@ -463,38 +480,37 @@ for nivel in range(num_niveles):
 
     activas.append(variables_nivel)
 
+# Para cada hueco de cada variable, la variable i-ésima del nivel anterior lo ocupa o no - Booleano
 ocupacion_huecos_variables_v = []
+
+# Para cada hueco de cada variable, el factor i-ésimo lo ocupa o no - Booleano
 ocupacion_huecos_variables_f = []
 
 composicion_variables_intermedias(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f)
 orden_huecos_variables(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f)
 orden_variables_nivel(ocupacion_huecos_variables_f)
 
-# Dentro de un mismo nivel, primero van las variables que contienen factores y luego las que no
 restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, activas)                
 
-# Se cubren correctamente todas las variables originales en todas las variables intermedias
+# Cada variable, cuántas variables de cada una de las originales contiene - Entero
 cuantas_variables = []
 cubre_variables_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, cuantas_variables)
 
-# Los monomios resultantes cumplen todos 0 <= grado <= maxDeg
+# Para cada hueco de cada monomio, la variable i-ésima del último nivel lo ocupa o no - Booleano
 ocupacion_huecos_monomios_v = []
-ocupacion_huecos_monomios_f = []
-composicion_monomios(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f)
 
-# Suponiendo como orden, primero VI y luego factores
+# Para cada hueco de cada monomio, el factor i-ésimo lo ocupa o no - Booleano
+ocupacion_huecos_monomios_f = []
+
+composicion_monomios(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f)
 orden_huecos_monomios(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f)
 restricciones_huecos_m(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f)
-
-# Se cubren todas las variables originales que tiene el monomio
 cubre_variables_m(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f)
 
-# Variables que realmente cuentan
+# Para cada VI, cuenta realmente como VI o no, pese a estar activa -> Igual se puede ahorrar con no repetidas en un nivel???
 cuentan = []
 suma_cuentan = []
-
 restricciones_cuentan(cuentan, suma_cuentan)
-
 solver.add(addsum(suma_cuentan) <= max_intermedias)
 
 if solver.check() == sat:
@@ -539,5 +555,5 @@ else:
 
 # file.write(str(solver.assertions()))
 
-with open("debug_constraints.smt2", "w") as out:
-    out.write(solver.to_smt2())
+# with open("debug_constraints.smt2", "w") as out:
+#     out.write(solver.to_smt2())
