@@ -149,7 +149,6 @@ def composicion_variables_intermedias(ocupacion_huecos_variables_v, ocupacion_hu
 
 # Para todo hueco, los siguientes deben tener índice mayor. Todos los índices anteriores no deben estar activados. Primero aparecen otras VI y luego los factores
 def orden_huecos_variables(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f):
-    # CAMBIARLO PORQUE AHORA EL ORDEN TIENE QUE SER TAMBIÉN CON LAS DE LOS NIVELES ANTERIORES
     for nivel in range(num_niveles):
         for variable in range(num_variables_por_nivel):
             for hueco in range(maxDeg):
@@ -157,23 +156,35 @@ def orden_huecos_variables(ocupacion_huecos_variables_v, ocupacion_huecos_variab
                     for nivel_anterior in range(0, nivel): 
                         for variable_nivel_anterior in range(num_variables_por_nivel):
                             for hueco_sig in range(hueco + 1, maxDeg):
+                                # Ninguna de ningún nivel anterior pueden tener dependencia en los siguientes huecos
+                                for niveles_anteriores in range(0, nivel_anterior):
+                                    for var in range(num_variables_por_nivel):
+                                        solver.add(Implies(ocupacion_huecos_variables_v[nivel][variable][hueco][nivel_anterior][variable_nivel_anterior], Not(ocupacion_huecos_variables_v[nivel][variable][hueco_sig][niveles_anteriores][var])))
+                                
+                                # Las anteriores de su nivel tampoco pueden tener dependencia en los siguientes huecos
                                 for variables_anteriores in range(0, variable_nivel_anterior):
                                     solver.add(Implies(ocupacion_huecos_variables_v[nivel][variable][hueco][nivel_anterior][variable_nivel_anterior], Not(ocupacion_huecos_variables_v[nivel][variable][hueco_sig][nivel_anterior][variables_anteriores])))
 
-                        for factor in range(num_combinaciones):
-                            for hueco_sig in range(hueco + 1, maxDeg):
-                                    for variables_anteriores in range(0, num_variables_por_nivel):
-                                        solver.add(Implies(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], Not(ocupacion_huecos_variables_v[nivel][variable][hueco_sig][nivel_anterior][variables_anteriores])))
+                    for factor in range(num_combinaciones):
+                        for hueco_sig in range(hueco + 1, maxDeg):
+                            # Ninguna variable de un nivel anterior puede tener dependencia en los siguientes huecos
+                            for nivel_anterior in range(0, nivel):
+                                for var_nivel_anterior in range(num_variables_por_nivel):
+                                    solver.add(Implies(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], Not(ocupacion_huecos_variables_v[nivel][variable][hueco_sig][nivel_anterior][var_nivel_anterior])))
 
-                                    for factores_anteriores in range(0, factor):
-                                        solver.add(Implies(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], Not(ocupacion_huecos_variables_f[nivel][variable][hueco_sig][factores_anteriores])))
-                            
+                            # La anteriores de su nivel tampoco pueden tener dependencia en los siguientes huecos
+                            for variables_anteriores in range(0, num_variables_por_nivel):
+                                solver.add(Implies(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], Not(ocupacion_huecos_variables_v[nivel][variable][hueco_sig][nivel_anterior][variables_anteriores])))
+
+                            for factores_anteriores in range(0, factor):
+                                solver.add(Implies(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], Not(ocupacion_huecos_variables_f[nivel][variable][hueco_sig][factores_anteriores])))
+                    
                 else:   
                     for factor in range(num_combinaciones):
                         for hueco_sig in range(hueco + 1, maxDeg):
-                                for factores_anteriores in range(0, factor):
-                                    solver.add(Implies(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], Not(ocupacion_huecos_variables_f[nivel][variable][hueco_sig][factores_anteriores])))
-    
+                            for factores_anteriores in range(0, factor):
+                                solver.add(Implies(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], Not(ocupacion_huecos_variables_f[nivel][variable][hueco_sig][factores_anteriores])))
+
 # Dentro de un mismo nivel, primero aparecen las VI que contienen factores y luego las que no
 def orden_variables_nivel(ocupacion_huecos_variables_f):
     for nivel in range(1, num_niveles): # El primer nivel siempre va a tener solo factores
@@ -362,14 +373,19 @@ def orden_huecos_monomios(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios
                 for nivel in range(num_niveles):
                     for variable_nivel_anterior in range(num_variables_por_nivel): 
                         for hueco_sig in range(hueco + 1, maxDeg):
+                            for nivel_anterior in range(0, nivel):
+                                for var_nivel_anterior in range(num_variables_por_nivel):
+                                    solver.add(Implies(ocupacion_huecos_monomios_v[mon][hueco][nivel][variable_nivel_anterior], Not(ocupacion_huecos_monomios_v[mon][hueco_sig][nivel_anterior][var_nivel_anterior])))
+                            
                             for variables_anteriores in range(0, variable_nivel_anterior):
                                 solver.add(Implies(ocupacion_huecos_monomios_v[mon][hueco][nivel][variable_nivel_anterior], Not(ocupacion_huecos_monomios_v[mon][hueco_sig][nivel][variables_anteriores])))
 
                 for factor in range(num_combinaciones):
                     for hueco_sig in range(hueco + 1, maxDeg):
-                        for variables_anteriores in range(0, num_variables_por_nivel):
-                            solver.add(Implies(ocupacion_huecos_monomios_f[mon][hueco][factor], Not(ocupacion_huecos_monomios_v[mon][hueco_sig][nivel][variables_anteriores])))
-                        
+                        for nivel_anterior in range(num_niveles):
+                            for var_nivel_anterior in range(num_variables_por_nivel):
+                                solver.add(Implies(ocupacion_huecos_monomios_f[mon][hueco][factor], Not(ocupacion_huecos_monomios_v[mon][hueco_sig][nivel_anterior][var_nivel_anterior])))
+                 
                         for factores_anteriores in range(0, factor):
                             solver.add(Implies(ocupacion_huecos_monomios_f[mon][hueco][factor], Not(ocupacion_huecos_monomios_f[mon][hueco_sig][factores_anteriores])))
 
