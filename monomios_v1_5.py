@@ -6,7 +6,7 @@
 A partir de la versión entera, pasar a booleanos y añadir la idea de que una VI/monomio tiene para formarse, como máximo, maxDeg huecos que puede
 rellenar con otras VI del nivel anterior, factores, o dejarlo vacío
 
-Solo se permite formar VI con otras VI del nivel anterior y factores iniciales, no se permite utilizar otras VI de cualquier nivel
+Permitir que las variables se formen con VI de cualquier nivel, no solo del anterior, además de factores
 
 """
 
@@ -113,8 +113,8 @@ solver = Solver()
 
 ##### PARAMETROS #####
 num_niveles = 3 # max(1, int(math.ceil(math.log(mayor_grado_polinomio + 1, 2))))  # log base 2 del mayor grado del polinomio
-num_variables_por_nivel = 3 # max(2, math.ceil(num_monomios))
-max_intermedias = 2
+num_variables_por_nivel = 2 # max(2, math.ceil(num_monomios))
+max_intermedias = 4
 
 # Declaración de los huecos de los que disponen las VI para formarse
 def composicion_variables_intermedias(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f):
@@ -127,9 +127,13 @@ def composicion_variables_intermedias(ocupacion_huecos_variables_v, ocupacion_hu
             for hueco in range(maxDeg):
                 ocupa_v = []
                 ocupa_f = []
+                
+                for nivel_anterior in range(0, nivel):
+                    ocupa_v_anterior = []
+                    for variable_nivel_anterior in range(num_variables_por_nivel):
+                        ocupa_v_anterior.append(Bool("ocupav_" + str(nivel) + "_" + str(variable) + "_" + str(hueco) + "_" + str(nivel_anterior) + "_" + str(variable_nivel_anterior)))
 
-                for variable_nivel_anterior in range(num_variables_por_nivel):
-                    ocupa_v.append(Bool("ocupav_" + str(nivel) + "_" + str(variable) + "_" + str(hueco) + "_" + str(variable_nivel_anterior)))
+                    ocupa_v.append(ocupa_v_anterior)
 
                 for factor in range(num_combinaciones):
                     ocupa_f.append(Bool("ocupaf_" + str(nivel) + "_" + str(variable) + "_" + str(hueco) + "_" + str(factor)))
@@ -145,23 +149,25 @@ def composicion_variables_intermedias(ocupacion_huecos_variables_v, ocupacion_hu
 
 # Para todo hueco, los siguientes deben tener índice mayor. Todos los índices anteriores no deben estar activados. Primero aparecen otras VI y luego los factores
 def orden_huecos_variables(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f):
+    # CAMBIARLO PORQUE AHORA EL ORDEN TIENE QUE SER TAMBIÉN CON LAS DE LOS NIVELES ANTERIORES
     for nivel in range(num_niveles):
         for variable in range(num_variables_por_nivel):
             for hueco in range(maxDeg):
                 if nivel > 0:
-                    for variable_nivel_anterior in range(num_variables_por_nivel):
-                        for hueco_sig in range(hueco + 1, maxDeg):
-                            for variables_anteriores in range(0, variable_nivel_anterior):
-                                solver.add(Implies(ocupacion_huecos_variables_v[nivel][variable][hueco][variable_nivel_anterior], Not(ocupacion_huecos_variables_v[nivel][variable][hueco_sig][variables_anteriores])))
+                    for nivel_anterior in range(0, nivel): 
+                        for variable_nivel_anterior in range(num_variables_por_nivel):
+                            for hueco_sig in range(hueco + 1, maxDeg):
+                                for variables_anteriores in range(0, variable_nivel_anterior):
+                                    solver.add(Implies(ocupacion_huecos_variables_v[nivel][variable][hueco][nivel_anterior][variable_nivel_anterior], Not(ocupacion_huecos_variables_v[nivel][variable][hueco_sig][nivel_anterior][variables_anteriores])))
 
-                    for factor in range(num_combinaciones):
-                        for hueco_sig in range(hueco + 1, maxDeg):
-                                for variables_anteriores in range(0, num_variables_por_nivel):
-                                    solver.add(Implies(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], Not(ocupacion_huecos_variables_v[nivel][variable][hueco_sig][variables_anteriores])))
+                        for factor in range(num_combinaciones):
+                            for hueco_sig in range(hueco + 1, maxDeg):
+                                    for variables_anteriores in range(0, num_variables_por_nivel):
+                                        solver.add(Implies(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], Not(ocupacion_huecos_variables_v[nivel][variable][hueco_sig][nivel_anterior][variables_anteriores])))
 
-                                for factores_anteriores in range(0, factor):
-                                    solver.add(Implies(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], Not(ocupacion_huecos_variables_f[nivel][variable][hueco_sig][factores_anteriores])))
-                        
+                                    for factores_anteriores in range(0, factor):
+                                        solver.add(Implies(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], Not(ocupacion_huecos_variables_f[nivel][variable][hueco_sig][factores_anteriores])))
+                            
                 else:   
                     for factor in range(num_combinaciones):
                         for hueco_sig in range(hueco + 1, maxDeg):
@@ -191,14 +197,16 @@ def rellenar_huecos_variables_en_orden(ocupacion_huecos_variables_v, ocupacion_h
     for hueco in range(1, maxDeg):
         suma_actual = []
         suma_anterior = []
-        for var in ocupacion_huecos_variables_v[nivel][variable][hueco]:
-            suma_actual.append(If(var, 1, 0))
+        for nivel_anterior in range(0, nivel):
+            for var in ocupacion_huecos_variables_v[nivel][variable][hueco][nivel_anterior]:
+                suma_actual.append(If(var, 1, 0))
 
         for fact in ocupacion_huecos_variables_f[nivel][variable][hueco]:
             suma_actual.append(If(fact, 1, 0))
 
-        for var in ocupacion_huecos_variables_v[nivel][variable][hueco - 1]:
-            suma_anterior.append(If(var, 1, 0))
+        for nivel_anterior in range(0, nivel):
+            for var in ocupacion_huecos_variables_v[nivel][variable][hueco - 1][nivel_anterior]:
+                suma_anterior.append(If(var, 1, 0))
 
         for fact in ocupacion_huecos_variables_f[nivel][variable][hueco - 1]:
             suma_anterior.append(If(fact, 1, 0))
@@ -206,46 +214,48 @@ def rellenar_huecos_variables_en_orden(ocupacion_huecos_variables_v, ocupacion_h
     solver.add(Implies(addsum(suma_actual) > 0, addsum(suma_anterior) > 0))
 
 # No puede haber 2 variables iguales en el mismo nivel - Ver si es mejor permitirlas repetidas, o vacías
-def variables_distintas_nivel(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, nivel):
-    for vi1 in range(num_variables_por_nivel):
-        for vi2 in range(vi1 + 1, num_variables_por_nivel):
-            diferencias = []
+# def variables_distintas_nivel(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, nivel):
+#     for vi1 in range(num_variables_por_nivel):
+#         for vi2 in range(vi1 + 1, num_variables_por_nivel):
+#             diferencias = []
 
-            if nivel > 0:
-                for var in range(num_variables_por_nivel):
-                    # Conteo en VI1
-                    ocurrencias_vi1 = []
-                    for hueco in range(maxDeg):
-                        ocurrencias_vi1.append(If(ocupacion_huecos_variables_v[nivel][vi1][hueco][var], 1, 0))
-                    count_vi1 = addsum(ocurrencias_vi1)
+#             if nivel > 0:
+#                 for var in range(num_variables_por_nivel):
+#                     # Conteo en VI1
+#                     ocurrencias_vi1 = []
+#                     for nivel_anterior in range(0, nivel):
+#                         for hueco in range(maxDeg):
+#                             ocurrencias_vi1.append(If(ocupacion_huecos_variables_v[nivel][vi1][hueco][nivel_anterior][var], 1, 0))
+#                     count_vi1 = addsum(ocurrencias_vi1)
 
-                    # Conteo en VI2
-                    ocurrencias_vi2 = []
-                    for hueco in range(maxDeg):
-                        ocurrencias_vi2.append(If(ocupacion_huecos_variables_v[nivel][vi2][hueco][var], 1, 0))
-                    count_vi2 = addsum(ocurrencias_vi2)
+#                     # Conteo en VI2
+#                     ocurrencias_vi2 = []
+#                     for nivel_anterior in range(0, nivel):
+#                         for hueco in range(maxDeg):
+#                             ocurrencias_vi2.append(If(ocupacion_huecos_variables_v[nivel][vi2][hueco][nivel_anterior][var], 1, 0))
+#                     count_vi2 = addsum(ocurrencias_vi2)
 
-                    # Si la cuenta no coincide o ambos son variables vacías, diferencia
-                    diferencias.append(If(Or(And(count_vi1 == 0, count_vi2 == 0), count_vi1 != count_vi2), 1, 0))
+#                     # Si la cuenta no coincide o ambos son variables vacías, diferencia
+#                     diferencias.append(If(Or(And(count_vi1 == 0, count_vi2 == 0), count_vi1 != count_vi2), 1, 0))
 
-            for fact in range(num_combinaciones):
-                # Conteo en VI1
-                ocurrencias_vi1 = []
-                for hueco in range(maxDeg):
-                    ocurrencias_vi1.append(If(ocupacion_huecos_variables_f[nivel][vi1][hueco][fact], 1, 0))
-                count_vi1 = addsum(ocurrencias_vi1)
+#             for fact in range(num_combinaciones):
+#                 # Conteo en VI1
+#                 ocurrencias_vi1 = []
+#                 for hueco in range(maxDeg):
+#                     ocurrencias_vi1.append(If(ocupacion_huecos_variables_f[nivel][vi1][hueco][fact], 1, 0))
+#                 count_vi1 = addsum(ocurrencias_vi1)
 
-                # Conteo en VI2
-                ocurrencias_vi2 = []
-                for hueco in range(maxDeg):
-                    ocurrencias_vi2.append(If(ocupacion_huecos_variables_f[nivel][vi2][hueco][fact], 1, 0))
-                count_vi2 = addsum(ocurrencias_vi2)
+#                 # Conteo en VI2
+#                 ocurrencias_vi2 = []
+#                 for hueco in range(maxDeg):
+#                     ocurrencias_vi2.append(If(ocupacion_huecos_variables_f[nivel][vi2][hueco][fact], 1, 0))
+#                 count_vi2 = addsum(ocurrencias_vi2)
 
-                # Si la cuenta no coincide, diferencia
-                diferencias.append(If(Or(And(count_vi1 == 0, count_vi2 == 0), count_vi1 != count_vi2), 1, 0))
+#                 # Si la cuenta no coincide, diferencia
+#                 diferencias.append(If(Or(And(count_vi1 == 0, count_vi2 == 0), count_vi1 != count_vi2), 1, 0))
 
-            # Si ambas VI están activas, deben diferir en al menos una dependencia (aunque en distinto orden)
-            solver.add(addsum(diferencias) > 0) # No es necesario comprobar que estén activas
+#             # Si ambas VI están activas, deben diferir en al menos una dependencia (aunque en distinto orden)
+#             solver.add(addsum(diferencias) > 0) # No es necesario comprobar que estén activas
 
 # Restricciones de ocupación de los huecos de las VI
 def restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, activas):
@@ -257,13 +267,14 @@ def restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variab
             for hueco in range(maxDeg):
                 variables_activas_por_hueco = []
                 if nivel > 0:
-                    for variable_nivel_anterior in range(num_variables_por_nivel):
+                    for nivel_anterior in range(0, nivel):
+                        for variable_nivel_anterior in range(num_variables_por_nivel):
 
-                        solver.add(Implies(ocupacion_huecos_variables_v[nivel][variable][hueco][variable_nivel_anterior], activas[nivel - 1][variable_nivel_anterior]))
+                            solver.add(Implies(ocupacion_huecos_variables_v[nivel][variable][hueco][nivel_anterior][variable_nivel_anterior], activas[nivel_anterior][variable_nivel_anterior]))
 
-                        cumple_grado.append(If(ocupacion_huecos_variables_v[nivel][variable][hueco][variable_nivel_anterior], 1, 0))
+                            cumple_grado.append(If(ocupacion_huecos_variables_v[nivel][variable][hueco][nivel_anterior][variable_nivel_anterior], 1, 0))
 
-                        variables_activas_por_hueco.append(If(ocupacion_huecos_variables_v[nivel][variable][hueco][variable_nivel_anterior], 1, 0))
+                            variables_activas_por_hueco.append(If(ocupacion_huecos_variables_v[nivel][variable][hueco][nivel_anterior][variable_nivel_anterior], 1, 0))
 
                 # La variable elem de nivel cuántas veces utiliza el factor fact
                 for factor in range(num_combinaciones):
@@ -281,8 +292,8 @@ def restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variab
             solver.add(addsum(cumple_grado) <= maxDeg)
 
             # Eliminar variables que están formadas por una única variable intermedia/factor o por ninguna
-            solver.add(Or(addsum(variables_activas_por_var) == 0, addsum(variables_activas_por_var) > 1))
-            solver.add(Implies(addsum(variables_activas_por_var) == 0, Not(activas[nivel][variable])))
+            solver.add(addsum(variables_activas_por_var) > 1)
+            # solver.add(Implies(addsum(variables_activas_por_var) == 0, Not(activas[nivel][variable])))
 
             # Todas las variables de un mismo nivel deben ser distintas, porque luego se da la opción de poder elegirla más de una vez en huecos distintos
             # variables_distintas_nivel(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, nivel)
@@ -307,9 +318,10 @@ def cubre_variables_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f
                 conteo_var = []
                 for hueco in range(maxDeg):
                     if nivel > 0:
-                        for var in range(num_variables_por_nivel):
-                            # Si se ha utilizado en esta VI aporta las variables que contenga
-                            conteo_var.append(If(ocupacion_huecos_variables_v[nivel][elem][hueco][var], cuantas_variables[nivel - 1][var][variable_original], 0))
+                        for nivel_anterior in range(0, nivel):
+                            for var in range(num_variables_por_nivel):
+                                # Si se ha utilizado en esta VI aporta las variables que contenga
+                                conteo_var.append(If(ocupacion_huecos_variables_v[nivel][elem][hueco][nivel_anterior][var], cuantas_variables[nivel_anterior][var][variable_original], 0))
 
                     for fact in range(num_combinaciones):
                         conteo_var.append(If(ocupacion_huecos_variables_f[nivel][elem][hueco][fact], num_variables_por_factor[fact][variable_original], 0))
@@ -326,9 +338,12 @@ def composicion_monomios(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_
             ocupa_v = []
             ocupa_f = []
 
-            if num_niveles > 0:
+            # Puede coger VI de cualquier nivel
+            for nivel in range(num_niveles):
+                ocupa_v_nivel = []
                 for variable in range(num_variables_por_nivel):                
-                    ocupa_v.append(Bool("ocupamv_" + str(mon) + "_" + str(hueco) + "_" + str(variable)))
+                    ocupa_v_nivel.append(Bool("ocupamv_" + str(mon) + "_" + str(hueco) + "_" + str(nivel) + "_" + str(variable))) 
+                ocupa_v.append(ocupa_v_nivel)
 
             for factor in range(num_combinaciones):
                 ocupa_f.append(Bool("ocupamf_" + str(mon) + "_" + str(hueco) + "_" + str(factor)))
@@ -344,15 +359,16 @@ def orden_huecos_monomios(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios
     for mon in range(num_monomios):
         for hueco in range(maxDeg):
             if num_niveles > 0 and degree[mon] > maxDeg: # No debería necesitar formarse con VI, solo con factores
-                for variable_nivel_anterior in range(num_variables_por_nivel): 
-                    for hueco_sig in range(hueco + 1, maxDeg):
-                        for variables_anteriores in range(0, variable_nivel_anterior):
-                            solver.add(Implies(ocupacion_huecos_monomios_v[mon][hueco][variable_nivel_anterior], Not(ocupacion_huecos_monomios_v[mon][hueco_sig][variables_anteriores])))
+                for nivel in range(num_niveles):
+                    for variable_nivel_anterior in range(num_variables_por_nivel): 
+                        for hueco_sig in range(hueco + 1, maxDeg):
+                            for variables_anteriores in range(0, variable_nivel_anterior):
+                                solver.add(Implies(ocupacion_huecos_monomios_v[mon][hueco][nivel][variable_nivel_anterior], Not(ocupacion_huecos_monomios_v[mon][hueco_sig][nivel][variables_anteriores])))
 
                 for factor in range(num_combinaciones):
                     for hueco_sig in range(hueco + 1, maxDeg):
                         for variables_anteriores in range(0, num_variables_por_nivel):
-                            solver.add(Implies(ocupacion_huecos_monomios_f[mon][hueco][factor], Not(ocupacion_huecos_monomios_v[mon][hueco_sig][variables_anteriores])))
+                            solver.add(Implies(ocupacion_huecos_monomios_f[mon][hueco][factor], Not(ocupacion_huecos_monomios_v[mon][hueco_sig][nivel][variables_anteriores])))
                         
                         for factores_anteriores in range(0, factor):
                             solver.add(Implies(ocupacion_huecos_monomios_f[mon][hueco][factor], Not(ocupacion_huecos_monomios_f[mon][hueco_sig][factores_anteriores])))
@@ -370,15 +386,17 @@ def rellenar_huecos_monomios_en_orden(ocupacion_huecos_monomios_v, ocupacion_hue
         suma_anterior = []
 
         # if degree[mon] > maxDeg:
-        for var in ocupacion_huecos_monomios_v[mon][hueco]:
-            suma_actual.append(If(var, 1, 0))
+        for nivel_anterior in range(num_niveles):
+            for var in ocupacion_huecos_monomios_v[mon][hueco][nivel_anterior]:
+                suma_actual.append(If(var, 1, 0))
 
         for fact in ocupacion_huecos_monomios_f[mon][hueco]:
             suma_actual.append(If(fact, 1, 0))
 
         # if degree[mon] > maxDeg:
-        for var in ocupacion_huecos_monomios_v[mon][hueco - 1]:
-            suma_anterior.append(If(var, 1, 0))
+        for nivel_anterior in range(num_niveles):
+            for var in ocupacion_huecos_monomios_v[mon][hueco - 1][nivel_anterior]:
+                suma_anterior.append(If(var, 1, 0))
 
         for fact in ocupacion_huecos_monomios_f[mon][hueco - 1]:
             suma_anterior.append(If(fact, 1, 0))
@@ -392,14 +410,14 @@ def restricciones_huecos_m(ocupacion_huecos_monomios_v, ocupacion_huecos_monomio
 
         for hueco in range(maxDeg):
             activos_hueco = []
-            if num_niveles > 0:
+            for nivel_anterior in range(num_niveles):
                 for variable in range(num_variables_por_nivel):
                     if degree[mon] <= maxDeg:
-                        solver.add(Not(ocupacion_huecos_monomios_v[mon][hueco][variable]))
+                        solver.add(Not(ocupacion_huecos_monomios_v[mon][hueco][nivel_anterior][variable]))
                     else: 
-                        solver.add(Implies(ocupacion_huecos_monomios_v[mon][hueco][variable], activas[num_niveles - 1][variable]))
-                        de_cuantas_depende.append(If(ocupacion_huecos_monomios_v[mon][hueco][variable], 1, 0))
-                        activos_hueco.append(If(ocupacion_huecos_monomios_v[mon][hueco][variable], 1, 0))
+                        solver.add(Implies(ocupacion_huecos_monomios_v[mon][hueco][nivel_anterior][variable], activas[nivel_anterior][variable]))
+                        de_cuantas_depende.append(If(ocupacion_huecos_monomios_v[mon][hueco][nivel_anterior][variable], 1, 0))
+                        activos_hueco.append(If(ocupacion_huecos_monomios_v[mon][hueco][nivel_anterior][variable], 1, 0))
 
             for factor in range(num_combinaciones):
                 de_cuantas_depende.append(If(ocupacion_huecos_monomios_f[mon][hueco][factor], 1, 0))
@@ -418,10 +436,9 @@ def cubre_variables_m(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f):
         for var in range(len(cjto_variables)):
             conteo_var = []
             for hueco in range(maxDeg):
-                if num_niveles > 0: 
-                    # if degree[mon] > maxDeg:
+                for nivel_anterior in range(num_niveles):
                     for elem in range(num_variables_por_nivel):
-                        conteo_var.append(If(ocupacion_huecos_monomios_v[mon][hueco][elem], cuantas_variables[num_niveles - 1][elem][var], 0))
+                        conteo_var.append(If(ocupacion_huecos_monomios_v[mon][hueco][nivel_anterior][elem], cuantas_variables[nivel_anterior][elem][var], 0))
 
                 for fact in range(num_combinaciones):
                     conteo_var.append(If(ocupacion_huecos_monomios_f[mon][hueco][fact], num_variables_por_factor[fact][var], 0))
@@ -429,7 +446,7 @@ def cubre_variables_m(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f):
             solver.add(addsum(conteo_var) == num_variables_por_monomio[mon][var])
 
 # Qué variables realmente cuentan
-def restricciones_cuentan(cuentan, suma_cuentan):
+def restricciones_cuentan(cuentan, suma_cuentan, ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f):
     # Se utiliza en la variable y el número de huecos ocupados en dicha variable es mayor que 1
     for nivel in range(num_niveles):
         cuentan_nivel = []
@@ -441,26 +458,28 @@ def restricciones_cuentan(cuentan, suma_cuentan):
     # Solo para las variables
     for nivel in range(num_niveles - 1): # Las del último nivel van en función de si las utilizan o no los monomios
         for elem in range(num_variables_por_nivel):
-            for variable_siguiente_nivel in range(num_variables_por_nivel):
-                huecos_ocupados = []
-                depende = []
-                for hueco in range(maxDeg):
-                    for aux in range(num_variables_por_nivel):
-                        huecos_ocupados.append(If(ocupacion_huecos_variables_v[nivel + 1][variable_siguiente_nivel][hueco][aux], 1, 0))
-                        # Ver si se utiliza variable_siguiente_nivel depende de elem en algún hueco
-                        if aux == elem: depende.append(ocupacion_huecos_variables_v[nivel + 1][variable_siguiente_nivel][hueco][elem])
-                    
-                    for fact in range(num_combinaciones):
-                        huecos_ocupados.append(If(ocupacion_huecos_variables_f[nivel + 1][variable_siguiente_nivel][hueco][fact], 1, 0))
+            for nivel_siguiente in range(nivel + 1, num_niveles): # Todos los niveles siguientes la pueden utilizar
+                for variable_siguiente_nivel in range(num_variables_por_nivel):
+                    huecos_ocupados = []
+                    depende = []
+                    for hueco in range(maxDeg):
+                        for nivel_anterior in range(0, nivel_siguiente):
+                            for aux in range(num_variables_por_nivel):
+                                huecos_ocupados.append(If(ocupacion_huecos_variables_v[nivel_siguiente][variable_siguiente_nivel][hueco][nivel_anterior][aux], 1, 0))
+                                # Ver si se utiliza variable_siguiente_nivel depende de elem en algún hueco
+                                if aux == elem and nivel_anterior == nivel: depende.append(ocupacion_huecos_variables_v[nivel_siguiente][variable_siguiente_nivel][hueco][nivel][elem])
+                            
+                        for fact in range(num_combinaciones):
+                            huecos_ocupados.append(If(ocupacion_huecos_variables_f[nivel_siguiente][variable_siguiente_nivel][hueco][fact], 1, 0))
 
-                solver.add(Implies(And(addsum(huecos_ocupados) > 1, Or(*depende), activas[nivel][elem], activas[nivel + 1][variable_siguiente_nivel]), cuentan[nivel][elem]))
+                    solver.add(Implies(And(addsum(huecos_ocupados) > 1, Or(*depende), activas[nivel][elem], activas[nivel_siguiente][variable_siguiente_nivel]), cuentan[nivel][elem]))
 
     # Para monomios
     for mon in range(num_monomios):
         for hueco in range(maxDeg):
-            if num_niveles > 0:
+            for nivel_anterior in range(num_niveles):
                 for elem in range(num_variables_por_nivel):
-                    solver.add(Implies(And(activas[num_niveles - 1][elem], ocupacion_huecos_monomios_v[mon][hueco][elem]), cuentan[num_niveles - 1][elem]))
+                    solver.add(Implies(And(activas[nivel_anterior][elem], ocupacion_huecos_monomios_v[mon][hueco][nivel_anterior][elem]), cuentan[nivel_anterior][elem]))
 
     for nivel in range(num_niveles):
         for elem in range(num_variables_por_nivel):
@@ -508,17 +527,17 @@ cubre_variables_m(ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f)
 # Para cada VI, cuenta realmente como VI o no, pese a estar activa -> Igual se puede ahorrar con no repetidas en un nivel???
 cuentan = []
 suma_cuentan = []
-restricciones_cuentan(cuentan, suma_cuentan)
+restricciones_cuentan(cuentan, suma_cuentan, ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f)
 solver.add(addsum(suma_cuentan) <= max_intermedias)
+
 
 if solver.check() == sat:
     m = solver.model()
 
-    vi_dependencias = {}  # {"VI(n0, v1)": [{"posicion": 0, "tipo": "factor", "valor": "x_1"}, ...]}
-    monomios = []         # [{"monomio_id": 0, "huecos": [...]}]
+    vi_dependencias = {}
 
     # Salida JSON
-    # === Variables Intermedias ===
+    # === Capturar dependencias activas de VI ===
     for nivel in range(num_niveles):
         for elem in range(num_variables_por_nivel):
             var_activa = cuentan[nivel][elem]
@@ -526,16 +545,16 @@ if solver.check() == sat:
             if is_true(m.eval(var_activa)):
                 vi_dependencias[nombre_vi] = []
                 for hueco in range(maxDeg):
-                    # Variables intermedias
-                    if nivel > 0:
-                        for i, var in enumerate(ocupacion_huecos_variables_v[nivel][elem][hueco]):
-                            if is_true(m.eval(var)):
-                                vi_dependencias[nombre_vi].append({
-                                    "posicion": hueco,
-                                    "tipo": "variable_intermedia",
-                                    "nombre": f"VI(n{nivel - 1}, v{i})"
-                                })
-                    # Factores
+                    if hueco < len(ocupacion_huecos_variables_v[nivel][elem]):
+                        for nivel_src, lista_vars in enumerate(ocupacion_huecos_variables_v[nivel][elem][hueco]):
+                            for i, var in enumerate(lista_vars):
+                                if is_true(m.eval(var)):
+                                    vi_dependencias[nombre_vi].append({
+                                        "posicion": hueco,
+                                        "tipo": "variable_intermedia",
+                                        "nombre": f"VI(n{nivel_src}, v{i})"
+                                    })
+
                     for j, fact in enumerate(ocupacion_huecos_variables_f[nivel][elem][hueco]):
                         if is_true(m.eval(fact)):
                             vi_dependencias[nombre_vi].append({
@@ -544,65 +563,63 @@ if solver.check() == sat:
                                 "valor": f"{lista_combinaciones[j]}"
                             })
 
-    # === Función recursiva para construir árbol ===
-    def construir_dependencia(nodo):
-        if nodo.startswith("Factor"):
-            return {
-                "tipo": "factor",
-                "valor": nodo.replace("Factor ", "")
-            }
+    # === Función recursiva para construir dependencias anidadas ===
+    def expandir_vi(nombre_vi):
+        if nombre_vi not in vi_dependencias:
+            return {"tipo": "variable_intermedia", "nombre": nombre_vi, "dependencias": []}
 
-        dependencias = vi_dependencias.get(nodo, [])
-        dependencias_ordenadas = sorted(dependencias, key=lambda x: x["posicion"])
-        salida = {
+        dependencias = sorted(vi_dependencias[nombre_vi], key=lambda x: x["posicion"])
+        resultado = {
             "tipo": "variable_intermedia",
-            "nombre": nodo,
+            "nombre": nombre_vi,
             "dependencias": []
         }
 
-        for dep in dependencias_ordenadas:
+        for dep in dependencias:
             if dep["tipo"] == "factor":
-                salida["dependencias"].append({
+                resultado["dependencias"].append({
                     "posicion": dep["posicion"],
                     "tipo": "factor",
                     "valor": dep["valor"]
                 })
             else:
-                salida["dependencias"].append({
+                resultado["dependencias"].append({
                     "posicion": dep["posicion"],
-                    **construir_dependencia(dep["nombre"])
+                    **expandir_vi(dep["nombre"])
                 })
-        return salida
 
-    # === Monomios Finales ===
+        return resultado
+
+    # === Reconstrucción completa de monomios ===
+    monomios = []
+
     for mon in range(num_monomios):
-        huecos = []
-        for hueco in range(maxDeg):
-            # Variables intermedias
-            if num_niveles > 0:
-                for i, var in enumerate(ocupacion_huecos_monomios_v[mon][hueco]):
-                    if is_true(m.eval(var)):
-                        huecos.append({
-                            "posicion": hueco,
-                            **construir_dependencia(f"VI(n{num_niveles - 1}, v{i})")
-                        })
+        monomio = {
+            "monomio_id": mon,
+            "huecos": []
+        }
 
-            # Factores
+        for hueco in range(maxDeg):
+            if hueco < len(ocupacion_huecos_monomios_v[mon]):
+                for nivel_src, lista_vars in enumerate(ocupacion_huecos_monomios_v[mon][hueco]):
+                    for i, var in enumerate(lista_vars):
+                        if is_true(m.eval(var)):
+                            monomio["huecos"].append({
+                                "posicion": hueco,
+                                **expandir_vi(f"VI(n{nivel_src}, v{i})")
+                            })
+
             for j, fact in enumerate(ocupacion_huecos_monomios_f[mon][hueco]):
                 if is_true(m.eval(fact)):
-                    huecos.append({
+                    monomio["huecos"].append({
                         "posicion": hueco,
                         "tipo": "factor",
                         "valor": f"{lista_combinaciones[j]}"
                     })
 
-        huecos_ordenados = sorted(huecos, key=lambda x: x["posicion"])
-        monomios.append({
-            "monomio_id": mon,
-            "huecos": huecos_ordenados
-        })
+        monomios.append(monomio)
 
-    # === Exportar a JSON ===
+    # === Exportar a archivo JSON ===
     salida_json = {
         "num_monomios": num_monomios,
         "maxGrado": maxDeg,
@@ -612,7 +629,7 @@ if solver.check() == sat:
     with open("salida_monomios.json", "w", encoding="utf-8") as f:
         json.dump(salida_json, f, indent=2, ensure_ascii=False)
 
-    print("✅ Resultados guardados en 'salida_monomios.json'")
+    print("✅ Archivo 'salida_monomios.json' generado con éxito.")
 
     # Salida terminal
 
@@ -624,31 +641,35 @@ if solver.check() == sat:
                 print(f"🔹 VI(n{nivel}, v{elem}) está activa y depende de:")
 
                 for hueco in range(maxDeg):
-                    # Variables intermedias
-                    if nivel > 0:
-                        for i, var in enumerate(ocupacion_huecos_variables_v[nivel][elem][hueco]):
-                            if is_true(m.eval(var)):
-                                print(f"  - Hueco {hueco}: VI(n{nivel - 1}, v{i})")
+                    # Variables intermedias desde cualquier nivel
+                    if hueco < len(ocupacion_huecos_variables_v[nivel][elem]):
+                        niveles_fuente = ocupacion_huecos_variables_v[nivel][elem][hueco]
+                        for nivel_src, lista_vars in enumerate(niveles_fuente):
+                            for i, var in enumerate(lista_vars):
+                                if is_true(m.eval(var)):
+                                    print(f"  - Hueco {hueco}: VI(n{nivel_src}, v{i})")
 
                     # Factores
                     for j, fact in enumerate(ocupacion_huecos_variables_f[nivel][elem][hueco]):
                         if is_true(m.eval(fact)):
                             print(f"  - Hueco {hueco}: Factor {lista_combinaciones[j]}")
-
-    
     print("\n=== Monomios Reconstruidos ===\n")
     for mon in range(num_monomios):
         print(f"🔸 Monomio {mon} depende de:")
         for hueco in range(maxDeg):
-            # Variables intermedias
-            if num_niveles > 0:
-                for i, var in enumerate(ocupacion_huecos_monomios_v[mon][hueco]):
-                    if is_true(m.eval(var)):
-                        print(f"  - Hueco {hueco}: VI(n{num_niveles - 1}, v{i})")
+            # Variables intermedias desde cualquier nivel
+            if hueco < len(ocupacion_huecos_monomios_v[mon]):
+                niveles_fuente = ocupacion_huecos_monomios_v[mon][hueco]
+                for nivel_src, lista_vars in enumerate(niveles_fuente):
+                    for i, var in enumerate(lista_vars):
+                        if is_true(m.eval(var)):
+                            print(f"  - Hueco {hueco}: VI(n{nivel_src}, v{i})")
+
             # Factores
             for j, fact in enumerate(ocupacion_huecos_monomios_f[mon][hueco]):
                 if is_true(m.eval(fact)):
                     print(f"  - Hueco {hueco}: Factor {lista_combinaciones[j]}")
+
 else:
     print("\n❌ No se ha encontrado una solución.")
 
