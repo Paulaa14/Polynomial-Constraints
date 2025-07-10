@@ -36,7 +36,7 @@ def generate_combinations(expanded, maxDeg):
     for r in range(1, 2): # min(maxDeg, len(expanded)) + 1): # Para que solo saque expresiones como mucho de maxDeg, el resto no me sirven como variables intermedias
         # combinations(p, r) -> tuplas de longitud r ordenadas y no repetidas de los elementos en p
         for combo in itertools.combinations(expanded, r):
-            combinaciones.add(combo)
+            combinaciones.add(combo[0])
 
     return combinaciones
 
@@ -109,13 +109,13 @@ for comb in lista_combinaciones:
 print("Combinaciones: " + str(lista_combinaciones))
 print("Variables por monomio: " + str(num_variables_por_monomio))
 print("Variables por factor: " + str(num_variables_por_factor))
-
-solver = Solver()
+print("Conjunto variables: " + str(cjto_variables))
+solver = Optimize() # Solver()
 
 ##### PARAMETROS #####
-num_niveles = 1 # max(1, int(math.ceil(math.log(mayor_grado_polinomio + 1, 2))))  # log base 2 del mayor grado del polinomio
-num_variables_por_nivel = 3 # max(2, math.ceil(num_monomios))
-max_intermedias = 3
+num_niveles = 4 # max(1, int(math.ceil(math.log(mayor_grado_polinomio + 1, 2))))  # log base 2 del mayor grado del polinomio
+num_variables_por_nivel = 7 # max(2, math.ceil(num_monomios))
+max_intermedias = 5
 
 # Declaración de los huecos de los que disponen las VI para formarse
 def composicion_variables_intermedias(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f):
@@ -206,7 +206,7 @@ def rellenar_huecos_variables_en_orden(ocupacion_huecos_variables_v, ocupacion_h
 
     solver.add(Implies(addsum(suma_actual) > 0, addsum(suma_anterior) > 0))
 
-# No puede haber 2 variables iguales en el mismo nivel
+# No puede haber 2 variables iguales en el mismo nivel - Ver si es mejor permitirlas repetidas, o vacías
 def variables_distintas_nivel(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, nivel):
     for vi1 in range(num_variables_por_nivel):
         for vi2 in range(vi1 + 1, num_variables_por_nivel):
@@ -226,8 +226,8 @@ def variables_distintas_nivel(ocupacion_huecos_variables_v, ocupacion_huecos_var
                         ocurrencias_vi2.append(If(ocupacion_huecos_variables_v[nivel][vi2][hueco][var], 1, 0))
                     count_vi2 = addsum(ocurrencias_vi2)
 
-                    # Si la cuenta no coincide, diferencia
-                    diferencias.append(If(count_vi1 != count_vi2, 1, 0))
+                    # Si la cuenta no coincide o ambos son variables vacías, diferencia
+                    diferencias.append(If(Or(And(count_vi1 == 0, count_vi2 == 0), count_vi1 != count_vi2), 1, 0))
 
             for fact in range(num_combinaciones):
                 # Conteo en VI1
@@ -268,7 +268,7 @@ def restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variab
 
                 # La variable elem de nivel cuántas veces utiliza el factor fact
                 for factor in range(num_combinaciones):
-                    cumple_grado.append(If(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], len(lista_combinaciones[factor]), 0))
+                    cumple_grado.append(If(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], 1, 0))
 
                     variables_activas_por_hueco.append(If(ocupacion_huecos_variables_f[nivel][variable][hueco][factor], 1, 0))
 
@@ -282,10 +282,11 @@ def restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variab
             solver.add(addsum(cumple_grado) <= maxDeg)
 
             # Eliminar variables que están formadas por una única variable intermedia/factor o por ninguna
-            solver.add(addsum(variables_activas_por_var) > 1)
+            solver.add(Or(addsum(variables_activas_por_var) == 0, addsum(variables_activas_por_var) > 1))
+            solver.add(Implies(addsum(variables_activas_por_var) == 0, Not(activas[nivel][variable])))
 
             # Todas las variables de un mismo nivel deben ser distintas, porque luego se da la opción de poder elegirla más de una vez en huecos distintos
-            variables_distintas_nivel(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, nivel)
+            # variables_distintas_nivel(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, nivel)
 
 # Cuántas variables originales cubre esta VI con los elementos que ocupan sus huecos
 def cubre_variables_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, cuantas_variables):
@@ -403,7 +404,7 @@ def restricciones_huecos_m(ocupacion_huecos_monomios_v, ocupacion_huecos_monomio
                         activos_hueco.append(If(ocupacion_huecos_monomios_v[mon][hueco][variable], 1, 0))
 
             for factor in range(num_combinaciones):
-                de_cuantas_depende.append(If(ocupacion_huecos_monomios_f[mon][hueco][factor], len(lista_combinaciones[factor]), 0))
+                de_cuantas_depende.append(If(ocupacion_huecos_monomios_f[mon][hueco][factor], 1, 0))
                 activos_hueco.append(If(ocupacion_huecos_monomios_f[mon][hueco][factor], 1, 0))
             
             solver.add(addsum(activos_hueco) <= 1)
