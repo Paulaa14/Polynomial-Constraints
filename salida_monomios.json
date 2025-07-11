@@ -1,5 +1,5 @@
 {
-  "num_monomios": 12,
+  "num_monomios": 8,
   "maxGrado": 2,
   "monomios": [
     {
@@ -8,53 +8,12 @@
         {
           "posicion": 0,
           "tipo": "variable_intermedia",
-          "nombre": "VI(n2, v1)",
+          "nombre": "VI(n0, v2)",
           "dependencias": [
             {
               "posicion": 0,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n1, v1)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                }
-              ]
-            },
-            {
-              "posicion": 1,
               "tipo": "factor",
-              "valor": "x_3"
-            }
-          ]
-        },
-        {
-          "posicion": 1,
-          "tipo": "variable_intermedia",
-          "nombre": "VI(n2, v2)",
-          "dependencias": [
-            {
-              "posicion": 0,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n1, v1)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                }
-              ]
+              "valor": "x_1"
             },
             {
               "posicion": 1,
@@ -62,6 +21,11 @@
               "valor": "x_1"
             }
           ]
+        },
+        {
+          "posicion": 1,
+          "tipo": "factor",
+          "valor": "x_1"
         }
       ]
     },
@@ -71,53 +35,12 @@
         {
           "posicion": 0,
           "tipo": "variable_intermedia",
-          "nombre": "VI(n2, v1)",
+          "nombre": "VI(n0, v2)",
           "dependencias": [
             {
               "posicion": 0,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n1, v1)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                }
-              ]
-            },
-            {
-              "posicion": 1,
               "tipo": "factor",
-              "valor": "x_3"
-            }
-          ]
-        },
-        {
-          "posicion": 1,
-          "tipo": "variable_intermedia",
-          "nombre": "VI(n2, v2)",
-          "dependencias": [
-            {
-              "posicion": 0,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n1, v1)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                }
-              ]
+              "valor": "x_1"
             },
             {
               "posicion": 1,
@@ -125,6 +48,11 @@
               "valor": "x_1"
             }
           ]
+        },
+        {
+          "posicion": 1,
+          "tipo": "factor",
+          "valor": "x_2"
         }
       ]
     },
@@ -134,60 +62,24 @@
         {
           "posicion": 0,
           "tipo": "variable_intermedia",
-          "nombre": "VI(n1, v4)",
+          "nombre": "VI(n0, v1)",
           "dependencias": [
             {
               "posicion": 0,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n0, v0)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_2"
-                }
-              ]
+              "tipo": "factor",
+              "valor": "x_2"
             },
             {
               "posicion": 1,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n0, v4)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_2"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_3"
-                }
-              ]
+              "tipo": "factor",
+              "valor": "x_2"
             }
           ]
         },
         {
           "posicion": 1,
-          "tipo": "variable_intermedia",
-          "nombre": "VI(n2, v3)",
-          "dependencias": [
-            {
-              "posicion": 0,
-              "tipo": "factor",
-              "valor": "x_1"
-            },
-            {
-              "posicion": 1,
-              "tipo": "factor",
-              "valor": "x_1"
-            }
-          ]
+          "tipo": "factor",
+          "valor": "x_1"
         }
       ]
     },
@@ -197,60 +89,24 @@
         {
           "posicion": 0,
           "tipo": "variable_intermedia",
-          "nombre": "VI(n1, v1)",
+          "nombre": "VI(n0, v1)",
           "dependencias": [
             {
               "posicion": 0,
               "tipo": "factor",
-              "valor": "x_1"
+              "valor": "x_2"
             },
             {
               "posicion": 1,
               "tipo": "factor",
-              "valor": "x_1"
+              "valor": "x_2"
             }
           ]
         },
         {
           "posicion": 1,
-          "tipo": "variable_intermedia",
-          "nombre": "VI(n2, v4)",
-          "dependencias": [
-            {
-              "posicion": 0,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n1, v0)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_3"
-                }
-              ]
-            },
-            {
-              "posicion": 1,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n1, v0)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_3"
-                }
-              ]
-            }
-          ]
+          "tipo": "factor",
+          "valor": "x_2"
         }
       ]
     },
@@ -260,60 +116,24 @@
         {
           "posicion": 0,
           "tipo": "variable_intermedia",
-          "nombre": "VI(n1, v5)",
+          "nombre": "VI(n0, v2)",
           "dependencias": [
             {
               "posicion": 0,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n0, v0)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_2"
-                }
-              ]
+              "tipo": "factor",
+              "valor": "x_1"
             },
             {
               "posicion": 1,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n0, v5)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_2"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_3"
-                }
-              ]
+              "tipo": "factor",
+              "valor": "x_1"
             }
           ]
         },
         {
           "posicion": 1,
-          "tipo": "variable_intermedia",
-          "nombre": "VI(n2, v3)",
-          "dependencias": [
-            {
-              "posicion": 0,
-              "tipo": "factor",
-              "valor": "x_1"
-            },
-            {
-              "posicion": 1,
-              "tipo": "factor",
-              "valor": "x_1"
-            }
-          ]
+          "tipo": "factor",
+          "valor": "x_3"
         }
       ]
     },
@@ -323,65 +143,12 @@
         {
           "posicion": 0,
           "tipo": "variable_intermedia",
-          "nombre": "VI(n1, v5)",
+          "nombre": "VI(n0, v2)",
           "dependencias": [
             {
               "posicion": 0,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n0, v0)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_2"
-                }
-              ]
-            },
-            {
-              "posicion": 1,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n0, v5)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_2"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_3"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "posicion": 1,
-          "tipo": "variable_intermedia",
-          "nombre": "VI(n2, v2)",
-          "dependencias": [
-            {
-              "posicion": 0,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n1, v1)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                }
-              ]
+              "tipo": "factor",
+              "valor": "x_1"
             },
             {
               "posicion": 1,
@@ -389,6 +156,11 @@
               "valor": "x_1"
             }
           ]
+        },
+        {
+          "posicion": 1,
+          "tipo": "factor",
+          "valor": "x_2"
         }
       ]
     },
@@ -397,61 +169,13 @@
       "huecos": [
         {
           "posicion": 0,
-          "tipo": "variable_intermedia",
-          "nombre": "VI(n1, v2)",
-          "dependencias": [
-            {
-              "posicion": 0,
-              "tipo": "factor",
-              "valor": "x_2"
-            },
-            {
-              "posicion": 1,
-              "tipo": "factor",
-              "valor": "x_2"
-            }
-          ]
+          "tipo": "factor",
+          "valor": "x_2"
         },
         {
           "posicion": 1,
-          "tipo": "variable_intermedia",
-          "nombre": "VI(n1, v5)",
-          "dependencias": [
-            {
-              "posicion": 0,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n0, v0)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_2"
-                }
-              ]
-            },
-            {
-              "posicion": 1,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n0, v5)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_2"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_3"
-                }
-              ]
-            }
-          ]
+          "tipo": "factor",
+          "valor": "x_3"
         }
       ]
     },
@@ -461,70 +185,48 @@
         {
           "posicion": 0,
           "tipo": "variable_intermedia",
-          "nombre": "VI(n1, v0)",
+          "nombre": "VI(n1, v1)",
           "dependencias": [
             {
               "posicion": 0,
-              "tipo": "factor",
-              "valor": "x_1"
+              "tipo": "variable_intermedia",
+              "nombre": "VI(n0, v1)",
+              "dependencias": [
+                {
+                  "posicion": 0,
+                  "tipo": "factor",
+                  "valor": "x_2"
+                },
+                {
+                  "posicion": 1,
+                  "tipo": "factor",
+                  "valor": "x_2"
+                }
+              ]
             },
             {
               "posicion": 1,
-              "tipo": "factor",
-              "valor": "x_3"
+              "tipo": "variable_intermedia",
+              "nombre": "VI(n0, v1)",
+              "dependencias": [
+                {
+                  "posicion": 0,
+                  "tipo": "factor",
+                  "valor": "x_2"
+                },
+                {
+                  "posicion": 1,
+                  "tipo": "factor",
+                  "valor": "x_2"
+                }
+              ]
             }
           ]
         },
         {
           "posicion": 1,
           "tipo": "variable_intermedia",
-          "nombre": "VI(n1, v5)",
-          "dependencias": [
-            {
-              "posicion": 0,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n0, v0)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_2"
-                }
-              ]
-            },
-            {
-              "posicion": 1,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n0, v5)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_2"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_3"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "monomio_id": 8,
-      "huecos": [
-        {
-          "posicion": 0,
-          "tipo": "variable_intermedia",
-          "nombre": "VI(n2, v0)",
+          "nombre": "VI(n1, v2)",
           "dependencias": [
             {
               "posicion": 0,
@@ -534,35 +236,6 @@
                 {
                   "posicion": 0,
                   "tipo": "factor",
-                  "valor": "x_2"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_3"
-                }
-              ]
-            },
-            {
-              "posicion": 1,
-              "tipo": "factor",
-              "valor": "x_1"
-            }
-          ]
-        },
-        {
-          "posicion": 1,
-          "tipo": "variable_intermedia",
-          "nombre": "VI(n2, v1)",
-          "dependencias": [
-            {
-              "posicion": 0,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n1, v1)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
                   "valor": "x_1"
                 },
                 {
@@ -574,207 +247,18 @@
             },
             {
               "posicion": 1,
-              "tipo": "factor",
-              "valor": "x_3"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "monomio_id": 9,
-      "huecos": [
-        {
-          "posicion": 0,
-          "tipo": "variable_intermedia",
-          "nombre": "VI(n2, v3)",
-          "dependencias": [
-            {
-              "posicion": 0,
-              "tipo": "factor",
-              "valor": "x_1"
-            },
-            {
-              "posicion": 1,
-              "tipo": "factor",
-              "valor": "x_1"
-            }
-          ]
-        },
-        {
-          "posicion": 1,
-          "tipo": "variable_intermedia",
-          "nombre": "VI(n2, v5)",
-          "dependencias": [
-            {
-              "posicion": 0,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n0, v5)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_2"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_3"
-                }
-              ]
-            },
-            {
-              "posicion": 1,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n1, v0)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_3"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "monomio_id": 10,
-      "huecos": [
-        {
-          "posicion": 0,
-          "tipo": "variable_intermedia",
-          "nombre": "VI(n1, v4)",
-          "dependencias": [
-            {
-              "posicion": 0,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n0, v0)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_1"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_2"
-                }
-              ]
-            },
-            {
-              "posicion": 1,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n0, v4)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
-                  "valor": "x_2"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_3"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "posicion": 1,
-          "tipo": "variable_intermedia",
-          "nombre": "VI(n2, v0)",
-          "dependencias": [
-            {
-              "posicion": 0,
               "tipo": "variable_intermedia",
               "nombre": "VI(n0, v2)",
               "dependencias": [
                 {
                   "posicion": 0,
                   "tipo": "factor",
-                  "valor": "x_2"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_3"
-                }
-              ]
-            },
-            {
-              "posicion": 1,
-              "tipo": "factor",
-              "valor": "x_1"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "monomio_id": 11,
-      "huecos": [
-        {
-          "posicion": 0,
-          "tipo": "variable_intermedia",
-          "nombre": "VI(n0, v4)",
-          "dependencias": [
-            {
-              "posicion": 0,
-              "tipo": "factor",
-              "valor": "x_2"
-            },
-            {
-              "posicion": 1,
-              "tipo": "factor",
-              "valor": "x_3"
-            }
-          ]
-        },
-        {
-          "posicion": 1,
-          "tipo": "variable_intermedia",
-          "nombre": "VI(n2, v4)",
-          "dependencias": [
-            {
-              "posicion": 0,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n1, v0)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
                   "valor": "x_1"
                 },
                 {
                   "posicion": 1,
                   "tipo": "factor",
-                  "valor": "x_3"
-                }
-              ]
-            },
-            {
-              "posicion": 1,
-              "tipo": "variable_intermedia",
-              "nombre": "VI(n1, v0)",
-              "dependencias": [
-                {
-                  "posicion": 0,
-                  "tipo": "factor",
                   "valor": "x_1"
-                },
-                {
-                  "posicion": 1,
-                  "tipo": "factor",
-                  "valor": "x_3"
                 }
               ]
             }

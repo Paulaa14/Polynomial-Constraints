@@ -248,7 +248,7 @@ def variables_distintas_nivel(ocupacion_huecos_variables_v, ocupacion_huecos_var
             solver.add(addsum(diferencias) > 0) # No es necesario comprobar que estén activas
 
 # Restricciones de ocupación de los huecos de las VI
-def restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, activas):
+def restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f):
     for nivel in range(num_niveles):
         for variable in range(num_variables_por_nivel):
             cumple_grado = []
@@ -259,7 +259,7 @@ def restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variab
                 if nivel > 0:
                     for variable_nivel_anterior in range(num_variables_por_nivel):
 
-                        solver.add(Implies(ocupacion_huecos_variables_v[nivel][variable][hueco][variable_nivel_anterior], activas[nivel - 1][variable_nivel_anterior]))
+                        # solver.add(Implies(ocupacion_huecos_variables_v[nivel][variable][hueco][variable_nivel_anterior], activas[nivel - 1][variable_nivel_anterior]))
 
                         cumple_grado.append(If(ocupacion_huecos_variables_v[nivel][variable][hueco][variable_nivel_anterior], 1, 0))
 
@@ -281,8 +281,8 @@ def restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variab
             solver.add(addsum(cumple_grado) <= maxDeg)
 
             # Eliminar variables que están formadas por una única variable intermedia/factor o por ninguna
-            solver.add(Or(addsum(variables_activas_por_var) == 0, addsum(variables_activas_por_var) > 1))
-            solver.add(Implies(addsum(variables_activas_por_var) == 0, Not(activas[nivel][variable])))
+            solver.add(addsum(variables_activas_por_var) > 1)
+            # solver.add(Implies(addsum(variables_activas_por_var) == 0, Not(activas[nivel][variable])))
 
             # Todas las variables de un mismo nivel deben ser distintas, porque luego se da la opción de poder elegirla más de una vez en huecos distintos
             # variables_distintas_nivel(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, nivel)
@@ -397,7 +397,7 @@ def restricciones_huecos_m(ocupacion_huecos_monomios_v, ocupacion_huecos_monomio
                     if degree[mon] <= maxDeg:
                         solver.add(Not(ocupacion_huecos_monomios_v[mon][hueco][variable]))
                     else: 
-                        solver.add(Implies(ocupacion_huecos_monomios_v[mon][hueco][variable], activas[num_niveles - 1][variable]))
+                        # solver.add(Implies(ocupacion_huecos_monomios_v[mon][hueco][variable], activas[num_niveles - 1][variable]))
                         de_cuantas_depende.append(If(ocupacion_huecos_monomios_v[mon][hueco][variable], 1, 0))
                         activos_hueco.append(If(ocupacion_huecos_monomios_v[mon][hueco][variable], 1, 0))
 
@@ -439,28 +439,39 @@ def restricciones_cuentan(cuentan, suma_cuentan):
         cuentan.append(cuentan_nivel)
 
     # Solo para las variables
-    for nivel in range(num_niveles - 1): # Las del último nivel van en función de si las utilizan o no los monomios
-        for elem in range(num_variables_por_nivel):
-            for variable_siguiente_nivel in range(num_variables_por_nivel):
-                huecos_ocupados = []
-                depende = []
-                for hueco in range(maxDeg):
-                    for aux in range(num_variables_por_nivel):
-                        huecos_ocupados.append(If(ocupacion_huecos_variables_v[nivel + 1][variable_siguiente_nivel][hueco][aux], 1, 0))
-                        # Ver si se utiliza variable_siguiente_nivel depende de elem en algún hueco
-                        if aux == elem: depende.append(ocupacion_huecos_variables_v[nivel + 1][variable_siguiente_nivel][hueco][elem])
+    # for nivel in range(num_niveles - 1): # Las del último nivel van en función de si las utilizan o no los monomios
+    #     for elem in range(num_variables_por_nivel):
+    #         for variable_siguiente_nivel in range(num_variables_por_nivel):
+    #             huecos_ocupados = []
+    #             depende = []
+    #             for hueco in range(maxDeg):
+    #                 for aux in range(num_variables_por_nivel):
+    #                     huecos_ocupados.append(If(ocupacion_huecos_variables_v[nivel + 1][variable_siguiente_nivel][hueco][aux], 1, 0))
+    #                     # Ver si se utiliza variable_siguiente_nivel depende de elem en algún hueco
+    #                     if aux == elem: depende.append(ocupacion_huecos_variables_v[nivel + 1][variable_siguiente_nivel][hueco][elem])
                     
-                    for fact in range(num_combinaciones):
-                        huecos_ocupados.append(If(ocupacion_huecos_variables_f[nivel + 1][variable_siguiente_nivel][hueco][fact], 1, 0))
+    #                 for fact in range(num_combinaciones):
+    #                     huecos_ocupados.append(If(ocupacion_huecos_variables_f[nivel + 1][variable_siguiente_nivel][hueco][fact], 1, 0))
 
-                solver.add(Implies(And(addsum(huecos_ocupados) > 1, Or(*depende), activas[nivel][elem], activas[nivel + 1][variable_siguiente_nivel]), cuentan[nivel][elem]))
+    #             solver.add(Implies(And(addsum(huecos_ocupados) > 1, Or(*depende), activas[nivel][elem], activas[nivel + 1][variable_siguiente_nivel]), cuentan[nivel][elem]))
 
     # Para monomios
     for mon in range(num_monomios):
         for hueco in range(maxDeg):
             if num_niveles > 0:
                 for elem in range(num_variables_por_nivel):
-                    solver.add(Implies(And(activas[num_niveles - 1][elem], ocupacion_huecos_monomios_v[mon][hueco][elem]), cuentan[num_niveles - 1][elem]))
+                    solver.add(Implies(ocupacion_huecos_monomios_v[mon][hueco][elem], cuentan[num_niveles - 1][elem]))
+
+    # Para variables, propagar hacia atrás. Es decir, tienes las variables que se utilizan en los monomios(cuentan = true). Las VI que se utilicen para
+    # rellenar los huecos de dicha VI usada en un monomio, son las que realmente cuentan. NO hay que tener en cuenta que se utilicen junto con 
+    # otra variable / factor porque hay una restricción arriba que obliga a que las variables tengan más de 1 hueco ocupado
+
+    for nivel in range(num_niveles - 1):
+        for variable in range(num_variables_por_nivel):
+            for var_nivel_sig in range(num_variables_por_nivel):
+                for hueco in range(maxDeg):
+                    solver.add(Implies(And(cuentan[nivel + 1][var_nivel_sig], ocupacion_huecos_variables_v[nivel + 1][var_nivel_sig][hueco][variable]), cuentan[nivel][variable]))
+
 
     for nivel in range(num_niveles):
         for elem in range(num_variables_por_nivel):
@@ -470,13 +481,13 @@ def restricciones_cuentan(cuentan, suma_cuentan):
 #######################################################################################################################################
 
 # La VI está activa o no - Booleano
-activas = []
-for nivel in range(num_niveles):
-    variables_nivel = []
-    for variable in range(num_variables_por_nivel):
-        variables_nivel.append(Bool("x_" + str(nivel) + "_" + str(variable))) # Está activa la variable o no
+# activas = []
+# for nivel in range(num_niveles):
+#     variables_nivel = []
+#     for variable in range(num_variables_por_nivel):
+#         variables_nivel.append(Bool("x_" + str(nivel) + "_" + str(variable))) # Está activa la variable o no
 
-    activas.append(variables_nivel)
+#     activas.append(variables_nivel)
 
 # Para cada hueco de cada variable, la variable i-ésima del nivel anterior lo ocupa o no - Booleano
 ocupacion_huecos_variables_v = []
@@ -488,7 +499,7 @@ composicion_variables_intermedias(ocupacion_huecos_variables_v, ocupacion_huecos
 orden_huecos_variables(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f)
 orden_variables_nivel(ocupacion_huecos_variables_f)
 
-restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, activas)                
+restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f)                
 
 # Cada variable, cuántas variables de cada una de las originales contiene - Entero
 cuantas_variables = []

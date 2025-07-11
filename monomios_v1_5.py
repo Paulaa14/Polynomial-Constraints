@@ -113,7 +113,9 @@ solver = Solver()
 
 ##### PARAMETROS #####
 num_niveles = 3 # max(1, int(math.ceil(math.log(mayor_grado_polinomio + 1, 2))))  # log base 2 del mayor grado del polinomio
-num_variables_por_nivel = 5 # max(2, math.ceil(num_monomios))
+num_variables_por_nivel = 6 # max(2, math.ceil(num_monomios))
+# num_variables_primer_nivel = 6
+# num_variables_resto_niveles = 5
 max_intermedias = 15
 
 # Declaración de los huecos de los que disponen las VI para formarse
@@ -269,7 +271,7 @@ def rellenar_huecos_variables_en_orden(ocupacion_huecos_variables_v, ocupacion_h
 #             solver.add(addsum(diferencias) > 0) # No es necesario comprobar que estén activas
 
 # Restricciones de ocupación de los huecos de las VI
-def restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, activas):
+def restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f):
     for nivel in range(num_niveles):
         for variable in range(num_variables_por_nivel):
             cumple_grado = []
@@ -281,7 +283,7 @@ def restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variab
                     for nivel_anterior in range(0, nivel):
                         for variable_nivel_anterior in range(num_variables_por_nivel):
 
-                            solver.add(Implies(ocupacion_huecos_variables_v[nivel][variable][hueco][nivel_anterior][variable_nivel_anterior], activas[nivel_anterior][variable_nivel_anterior]))
+                            # solver.add(Implies(ocupacion_huecos_variables_v[nivel][variable][hueco][nivel_anterior][variable_nivel_anterior], activas[nivel_anterior][variable_nivel_anterior]))
 
                             cumple_grado.append(If(ocupacion_huecos_variables_v[nivel][variable][hueco][nivel_anterior][variable_nivel_anterior], 1, 0))
 
@@ -431,7 +433,7 @@ def restricciones_huecos_m(ocupacion_huecos_monomios_v, ocupacion_huecos_monomio
                     if degree[mon] <= maxDeg:
                         solver.add(Not(ocupacion_huecos_monomios_v[mon][hueco][nivel_anterior][variable]))
                     else: 
-                        solver.add(Implies(ocupacion_huecos_monomios_v[mon][hueco][nivel_anterior][variable], activas[nivel_anterior][variable]))
+                        # solver.add(Implies(ocupacion_huecos_monomios_v[mon][hueco][nivel_anterior][variable], activas[nivel_anterior][variable]))
                         de_cuantas_depende.append(If(ocupacion_huecos_monomios_v[mon][hueco][nivel_anterior][variable], 1, 0))
                         activos_hueco.append(If(ocupacion_huecos_monomios_v[mon][hueco][nivel_anterior][variable], 1, 0))
 
@@ -495,7 +497,7 @@ def restricciones_cuentan(cuentan, suma_cuentan, ocupacion_huecos_variables_v, o
         for hueco in range(maxDeg):
             for nivel_anterior in range(num_niveles):
                 for elem in range(num_variables_por_nivel):
-                    solver.add(Implies(And(activas[nivel_anterior][elem], ocupacion_huecos_monomios_v[mon][hueco][nivel_anterior][elem]), cuentan[nivel_anterior][elem]))
+                    solver.add(Implies(ocupacion_huecos_monomios_v[mon][hueco][nivel_anterior][elem], cuentan[nivel_anterior][elem]))
 
     # Para variables, propagar hacia atrás. Es decir, tienes las variables que se utilizan en los monomios(cuentan = true). Las VI que se utilicen para
     # rellenar los huecos de dicha VI usada en un monomio, son las que realmente cuentan. NO hay que tener en cuenta que se utilicen junto con 
@@ -516,13 +518,13 @@ def restricciones_cuentan(cuentan, suma_cuentan, ocupacion_huecos_variables_v, o
 #######################################################################################################################################
 
 # La VI está activa o no - Booleano
-activas = []
-for nivel in range(num_niveles):
-    variables_nivel = []
-    for variable in range(num_variables_por_nivel):
-        variables_nivel.append(Bool("x_" + str(nivel) + "_" + str(variable))) # Está activa la variable o no
+# activas = []
+# for nivel in range(num_niveles):
+#     variables_nivel = []
+#     for variable in range(num_variables_por_nivel):
+#         variables_nivel.append(Bool("x_" + str(nivel) + "_" + str(variable))) # Está activa la variable o no
 
-    activas.append(variables_nivel)
+#     activas.append(variables_nivel)
 
 # Para cada hueco de cada variable, la variable i-ésima del nivel anterior lo ocupa o no - Booleano
 ocupacion_huecos_variables_v = []
@@ -534,7 +536,7 @@ composicion_variables_intermedias(ocupacion_huecos_variables_v, ocupacion_huecos
 orden_huecos_variables(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f)
 orden_variables_nivel(ocupacion_huecos_variables_f)
 
-restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, activas)                
+restricciones_huecos_v(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f)                
 
 # Cada variable, cuántas variables de cada una de las originales contiene - Entero
 cuantas_variables = []
