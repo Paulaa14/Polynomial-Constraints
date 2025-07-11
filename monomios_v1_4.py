@@ -241,7 +241,7 @@ def variables_distintas_nivel(ocupacion_huecos_variables_v, ocupacion_huecos_var
                     ocurrencias_vi2.append(If(ocupacion_huecos_variables_f[nivel][vi2][hueco][fact], 1, 0))
                 count_vi2 = addsum(ocurrencias_vi2)
 
-                # Si la cuenta no coincide, diferencia
+                # Si la cuenta no coincide, diferencia PERMITIR VACÍAS O REPETIDAS???
                 diferencias.append(If(Or(And(count_vi1 == 0, count_vi2 == 0), count_vi1 != count_vi2), 1, 0))
 
             # Si ambas VI están activas, deben diferir en al menos una dependencia (aunque en distinto orden)

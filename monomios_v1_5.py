@@ -113,8 +113,8 @@ solver = Solver()
 
 ##### PARAMETROS #####
 num_niveles = 3 # max(1, int(math.ceil(math.log(mayor_grado_polinomio + 1, 2))))  # log base 2 del mayor grado del polinomio
-num_variables_por_nivel = 2 # max(2, math.ceil(num_monomios))
-max_intermedias = 4
+num_variables_por_nivel = 5 # max(2, math.ceil(num_monomios))
+max_intermedias = 15
 
 # Declaración de los huecos de los que disponen las VI para formarse
 def composicion_variables_intermedias(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f):
@@ -471,31 +471,42 @@ def restricciones_cuentan(cuentan, suma_cuentan, ocupacion_huecos_variables_v, o
         
         cuentan.append(cuentan_nivel)
 
-    # Solo para las variables
-    for nivel in range(num_niveles - 1): # Las del último nivel van en función de si las utilizan o no los monomios
-        for elem in range(num_variables_por_nivel):
-            for nivel_siguiente in range(nivel + 1, num_niveles): # Todos los niveles siguientes la pueden utilizar
-                for variable_siguiente_nivel in range(num_variables_por_nivel):
-                    huecos_ocupados = []
-                    depende = []
-                    for hueco in range(maxDeg):
-                        for nivel_anterior in range(0, nivel_siguiente):
-                            for aux in range(num_variables_por_nivel):
-                                huecos_ocupados.append(If(ocupacion_huecos_variables_v[nivel_siguiente][variable_siguiente_nivel][hueco][nivel_anterior][aux], 1, 0))
-                                # Ver si se utiliza variable_siguiente_nivel depende de elem en algún hueco
-                                if aux == elem and nivel_anterior == nivel: depende.append(ocupacion_huecos_variables_v[nivel_siguiente][variable_siguiente_nivel][hueco][nivel][elem])
+    # # Solo para las variables
+    # for nivel in range(num_niveles - 1): # Las del último nivel van en función de si las utilizan o no los monomios
+    #     for elem in range(num_variables_por_nivel):
+    #         for nivel_siguiente in range(nivel + 1, num_niveles): # Todos los niveles siguientes la pueden utilizar
+    #             for variable_siguiente_nivel in range(num_variables_por_nivel):
+    #                 huecos_ocupados = []
+    #                 depende = []
+    #                 for hueco in range(maxDeg):
+    #                     for nivel_anterior in range(0, nivel_siguiente):
+    #                         for aux in range(num_variables_por_nivel):
+    #                             huecos_ocupados.append(If(ocupacion_huecos_variables_v[nivel_siguiente][variable_siguiente_nivel][hueco][nivel_anterior][aux], 1, 0))
+    #                             # Ver si se utiliza variable_siguiente_nivel depende de elem en algún hueco
+    #                             if aux == elem and nivel_anterior == nivel: depende.append(ocupacion_huecos_variables_v[nivel_siguiente][variable_siguiente_nivel][hueco][nivel][elem])
                             
-                        for fact in range(num_combinaciones):
-                            huecos_ocupados.append(If(ocupacion_huecos_variables_f[nivel_siguiente][variable_siguiente_nivel][hueco][fact], 1, 0))
+    #                     for fact in range(num_combinaciones):
+    #                         huecos_ocupados.append(If(ocupacion_huecos_variables_f[nivel_siguiente][variable_siguiente_nivel][hueco][fact], 1, 0))
 
-                    solver.add(Implies(And(addsum(huecos_ocupados) > 1, Or(*depende), activas[nivel][elem], activas[nivel_siguiente][variable_siguiente_nivel]), cuentan[nivel][elem]))
+    #                 solver.add(Implies(And(addsum(huecos_ocupados) > 1, Or(*depende), activas[nivel][elem], activas[nivel_siguiente][variable_siguiente_nivel]), cuentan[nivel][elem]))
 
-    # Para monomios
+    # Para monomios. Si utiliza una variable, dicha variable, cuenta
     for mon in range(num_monomios):
         for hueco in range(maxDeg):
             for nivel_anterior in range(num_niveles):
                 for elem in range(num_variables_por_nivel):
                     solver.add(Implies(And(activas[nivel_anterior][elem], ocupacion_huecos_monomios_v[mon][hueco][nivel_anterior][elem]), cuentan[nivel_anterior][elem]))
+
+    # Para variables, propagar hacia atrás. Es decir, tienes las variables que se utilizan en los monomios(cuentan = true). Las VI que se utilicen para
+    # rellenar los huecos de dicha VI usada en un monomio, son las que realmente cuentan. NO hay que tener en cuenta que se utilicen junto con 
+    # otra variable / factor porque hay una restricción arriba que obliga a que las variables tengan más de 1 hueco ocupado
+
+    for nivel in range(num_niveles - 1):
+        for variable in range(num_variables_por_nivel):
+            for nivel_siguiente in range(nivel + 1, num_niveles):
+                for var_nivel_sig in range(num_variables_por_nivel):
+                    for hueco in range(maxDeg):
+                        solver.add(Implies(And(cuentan[nivel_siguiente][var_nivel_sig], ocupacion_huecos_variables_v[nivel_siguiente][var_nivel_sig][hueco][nivel][variable]), cuentan[nivel][variable]))
 
     for nivel in range(num_niveles):
         for elem in range(num_variables_por_nivel):
