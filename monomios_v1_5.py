@@ -512,8 +512,20 @@ def restricciones_cuentan(cuentan, suma_cuentan, ocupacion_huecos_variables_v, o
 
     for nivel in range(num_niveles):
         for elem in range(num_variables_por_nivel):
+            usado_elem = []
             suma_cuentan.append(If(cuentan[nivel][elem], 1, 0))
             # solver.add_soft(Not(cuentan[nivel][elem]), 1, "cuentan")
+            for mon in range(num_monomios):
+                for hueco in range(maxDeg):
+                    usado_elem.append(If(ocupacion_huecos_monomios_v[mon][hueco][nivel][elem], 1, 0))
+            
+            for nivel_siguiente in range(nivel + 1, num_niveles):
+                for elem_nivel_sig in range(num_variables_por_nivel):
+                    for hueco in range(maxDeg):
+                        usado_elem.append(If(ocupacion_huecos_variables_v[nivel_siguiente][var_nivel_sig][hueco][nivel][elem], 1, 0))
+
+            solver.add(Implies(addsum(usado_elem) == 0, Not(cuentan[nivel][elem])))
+
 
 #######################################################################################################################################
 
@@ -558,7 +570,6 @@ cuentan = []
 suma_cuentan = []
 restricciones_cuentan(cuentan, suma_cuentan, ocupacion_huecos_variables_v, ocupacion_huecos_variables_f, ocupacion_huecos_monomios_v, ocupacion_huecos_monomios_f)
 solver.add(addsum(suma_cuentan) <= max_intermedias)
-
 
 if solver.check() == sat:
     m = solver.model()
