@@ -1,0 +1,13 @@
+{ 
+"num": 1,
+"polinomials":
+[
+    {"monomials":[
+    {"coef": -1,"factors": [{"signal": 9,"degree": 1}, {"signal": 5, "degree": 1}, {"signal": 6, "degree": 1}, {"signal": 7, "degree": 1}, {"signal": 8, "degree": 1}]},
+    {"coef": 1,"factors": [{"signal": 0,"degree": 1}, {"signal": 1, "degree": 1}, {"signal": 6, "degree": 1}, {"signal": 7, "degree": 1}, {"signal": 8, "degree": 1}]},
+    {"coef": 1,"factors": [{"signal": 0,"degree": 1}, {"signal": 2, "degree": 1}, {"signal": 5, "degree": 1}, {"signal": 7, "degree": 1}, {"signal": 8, "degree": 1}]},
+    {"coef": 1,"factors": [{"signal": 0,"degree": 1}, {"signal": 3, "degree": 1}, {"signal": 5, "degree": 1}, {"signal": 6, "degree": 1}, {"signal": 8, "degree": 1}]}, 
+    {"coef": 1,"factors": [{"signal": 0,"degree": 1}, {"signal": 4, "degree": 1}, {"signal": 5, "degree": 1}, {"signal": 6, "degree": 1}, {"signal": 7, "degree": 1}]}
+    ]}],
+    "degree": 3
+}

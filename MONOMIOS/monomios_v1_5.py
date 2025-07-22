@@ -14,6 +14,7 @@ import itertools
 import json
 from z3 import *
 import argparse
+import time
 
 def addsum(a):
     if len(a) == 0:
@@ -35,7 +36,7 @@ def expand_factors(factors): # [x_1, x_1, x_2]
 def generate_combinations(expanded, maxDeg):
     combinaciones = set() # Conjunto para que no se repitan los elementos
 
-    for r in range(1, 2): # min(maxDeg, len(expanded)) + 1): # Para que solo saque expresiones como mucho de maxDeg, el resto no me sirven como variables intermedias
+    for r in range(1, min(maxDeg, len(expanded)) + 1): # Para que solo saque expresiones como mucho de maxDeg, el resto no me sirven como variables intermedias
         # combinations(p, r) -> tuplas de longitud r ordenadas y no repetidas de los elementos en p
         for combo in itertools.combinations(expanded, r):
             combinaciones.add(combo[0])
@@ -112,11 +113,13 @@ print("Conjunto variables: " + str(cjto_variables))
 solver = Solver()
 
 ##### PARAMETROS #####
-num_niveles = 3 # max(1, int(math.ceil(math.log(mayor_grado_polinomio + 1, 2))))  # log base 2 del mayor grado del polinomio
+num_niveles = 2 # max(1, int(math.ceil(math.log(mayor_grado_polinomio + 1, 2))))  # log base 2 del mayor grado del polinomio
 num_variables_por_nivel = 6 # max(2, math.ceil(num_monomios))
 # num_variables_primer_nivel = 6
 # num_variables_resto_niveles = 5
-max_intermedias = 15
+max_intermedias = 11
+
+inicio = time.time()
 
 # Declaración de los huecos de los que disponen las VI para formarse
 def composicion_variables_intermedias(ocupacion_huecos_variables_v, ocupacion_huecos_variables_f):
@@ -572,6 +575,9 @@ restricciones_cuentan(cuentan, suma_cuentan, ocupacion_huecos_variables_v, ocupa
 solver.add(addsum(suma_cuentan) <= max_intermedias)
 
 if solver.check() == sat:
+    fin = time.time()
+
+    print(f"Tiempo de ejecución: {fin - inicio:.5f} segundos")       
     m = solver.model()
 
     vi_dependencias = {}
